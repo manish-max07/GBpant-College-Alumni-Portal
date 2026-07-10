@@ -1,0 +1,50 @@
+{
+  "name": "gbpant-alumni-portal",
+  "version": "1.0.0",
+  "description": "GBPANT Alumni Portal - Full Stack Application with Node.js Backend and React Frontend",
+  "scripts": {
+    "start": "cd backend && npm start",
+    "build": "cd backend && npm install && echo 'Backend dependencies installed'",
+    "dev": "cd backend && npm run dev",
+    "test": "cd backend && npm test",
+    "backend": "cd backend && npm start",
+    "frontend": "cd frontend && npm start",
+    "install-backend": "cd backend && npm install",
+    "install-frontend": "cd frontend && npm install",
+    "install-all": "npm run install-backend && npm run install-frontend"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
+  "keywords": [
+    "alumni",
+    "portal",
+    "nodejs",
+    "express",
+    "react",
+    "postgresql",
+    "supabase",
+    "authentication",
+    "captcha",
+    "email-service"
+  ],
+  "author": "GBPANT Alumni Portal Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/manish-max07/gbpant-alumni-portal.git"
+  },
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "private": true,
+  "dependencies": {},
+  "devDependencies": {},
+  "main": "backend/server.js",
+  "directories": {
+    "backend": "./backend",
+    "frontend": "./frontend"
+  }
+}

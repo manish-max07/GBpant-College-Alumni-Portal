@@ -1,0 +1,17 @@
+# Fallback for SPA routing
+/*    /index.html   200
+
+# Specific routes (optional, but explicit)
+/login    /index.html   200
+/signup   /index.html   200
+/about    /index.html   200
+/contact  /index.html   200
+/network  /index.html   200
+/events   /index.html   200
+/privacy  /index.html   200
+/terms    /index.html   200
+/alumni-dashboard  /index.html   200
+/student-dashboard /index.html   200
+/verify-otp        /index.html   200
+/set-password      /index.html   200
+/first-time        /index.html   200

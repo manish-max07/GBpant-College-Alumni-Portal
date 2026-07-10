@@ -1,0 +1,47 @@
+# Vercel ignore file
+# Excludes files from Vercel deployment
+
+# Development files
+*.bat
+test-*.js
+setup-*.js
+create-*.js
+migrate-*.js
+check-*.js
+
+# Documentation
+*.md
+docs/
+
+# Logs
+logs/
+*.log
+
+# Environment files (use Vercel dashboard instead)
+.env
+.env.*
+
+# Development dependencies
+node_modules/
+.npm/
+
+# IDE files
+.vscode/
+.idea/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/
+uploads/
+
+# Test files
+coverage/
+.nyc_output/
+
+# Build artifacts
+dist/
+build/
