@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import Layout from '../components/Layout';
 import PhoneInput from '../components/PhoneInput';
 import ProfilePicture from '../components/ProfilePicture';
+import { useAuth } from '../hooks/useAuth';
 import { 
   FaUser, 
   FaEdit, 
@@ -40,6 +41,7 @@ import {
 import { HiOutlineAcademicCap } from 'react-icons/hi';
 
 export default function StudentDashboard() {
+  const { user } = useAuth();
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState(false);
