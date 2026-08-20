@@ -1,6 +1,7 @@
 require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
+const cron = require('node-cron');
 const captchaRoutes = require('./routes/captcha');
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
@@ -19,6 +20,8 @@ const {
   validateJWTStructure
 } = require('./middleware/security');
 const { testConnection } = require('./config/database');
+const { pool } = require('./config/database');
+const { sendGraduationEmail } = require('./services/email-service');
 const DatabaseManager = require('./utils/database-manager');
 const TokenValidator = require('./utils/token-validator');
 const { ipDebugMiddleware, securityIPLogging } = require('./utils/ip-detection');
@@ -435,5 +438,104 @@ app.listen(PORT, () => {
   console.log('✅ Database-Based IP/Email/Domain Blocking Active');
   console.log('✅ Hardcoded Security Rules Active (temp emails, etc.)');
 });
+
+// ─── Automatic Student Semester Promotion Cron Jobs ─────────────────────────
+// Shared promotion logic (same as POST /api/admin/promote-students)
+async function runSemesterPromotion(triggerLabel) {
+  const MAX_SEMESTERS = {
+    'B.Tech': 8,
+    'Diploma': 6,
+    'M.Tech': 4,
+    'UG Certificate': 2
+  };
+
+  console.log(`\n🔔 [${triggerLabel}] Auto semester promotion triggered...`);
+  const client = await pool.connect();
+  try {
+    await client.query('BEGIN');
+
+    const studentsResult = await client.query(
+      `SELECT u.id AS user_id, u.email, u.full_name,
+              sp.semester, sp.branch, sp.program, sp.skills
+       FROM users u
+       JOIN student_profiles sp ON sp.user_id = u.id
+       WHERE u.user_type = 'student' AND u.is_approved = TRUE`
+    );
+
+    const students = studentsResult.rows;
+    let promotedCount = 0;
+    let graduatedCount = 0;
+    const currentYear = new Date().getFullYear();
+
+    for (const student of students) {
+      const maxSem = MAX_SEMESTERS[student.program] || 8;
+      const currentSem = student.semester || 1;
+
+      if (currentSem >= maxSem) {
+        // Graduate → convert to alumni
+        await client.query(
+          `UPDATE users SET user_type = 'alumni', updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+          [student.user_id]
+        );
+
+        const existingAlumni = await client.query(
+          'SELECT id FROM alumni_profiles WHERE user_id = $1',
+          [student.user_id]
+        );
+
+        if (existingAlumni.rows.length === 0) {
+          await client.query(
+            `INSERT INTO alumni_profiles (user_id, branch, program, passing_year, skills, created_at, updated_at)
+             VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+            [student.user_id, student.branch, student.program, currentYear, student.skills || []]
+          );
+        }
+
+        await client.query('DELETE FROM student_profiles WHERE user_id = $1', [student.user_id]);
+
+        sendGraduationEmail(student.email, student.full_name, student.program, currentYear)
+          .catch(err => console.error(`⚠️ Graduation email failed for ${student.email}:`, err.message));
+
+        console.log(`🎓 [Cron] Graduated: ${student.email} (${student.program} sem ${currentSem}/${maxSem})`);
+        graduatedCount++;
+
+      } else {
+        const newSem = currentSem + 1;
+        const newYear = Math.ceil(newSem / 2);
+        await client.query(
+          `UPDATE student_profiles
+           SET semester = $1, current_year = $2, updated_at = CURRENT_TIMESTAMP
+           WHERE user_id = $3`,
+          [newSem, newYear, student.user_id]
+        );
+        console.log(`📈 [Cron] Promoted: ${student.email} | sem ${currentSem} → ${newSem}`);
+        promotedCount++;
+      }
+    }
+
+    await client.query('COMMIT');
+    console.log(`✅ [${triggerLabel}] Promotion done — promoted: ${promotedCount}, graduated: ${graduatedCount}`);
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error(`❌ [${triggerLabel}] Promotion error:`, error.message);
+  } finally {
+    client.release();
+  }
+}
+
+// January 16 at 00:01 IST (= 18:31 UTC on January 15)
+// Spring semester (even semesters begin) → promote all students
+cron.schedule('31 18 15 1 *', () => {
+  runSemesterPromotion('Spring Jan-16');
+}, { timezone: 'UTC' });
+
+// July 1 at 00:01 IST (= 18:31 UTC on June 30)
+// Fall semester (odd semesters begin) → promote all students
+cron.schedule('31 18 30 6 *', () => {
+  runSemesterPromotion('Fall Jul-01');
+}, { timezone: 'UTC' });
+
+console.log('⏰ Semester promotion cron jobs scheduled (Jan 16 & Jul 1)');
 
 module.exports = app;

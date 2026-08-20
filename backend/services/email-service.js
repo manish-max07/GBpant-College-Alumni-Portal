@@ -460,12 +460,89 @@ const isValidEmail = (email) => {
   return emailRegex.test(email);
 };
 
+/**
+ * Send graduation congratulations email (student converted to alumni)
+ */
+const sendGraduationEmail = async (email, fullName, program, passingYear) => {
+  if (!email) {
+    console.error('❌ Missing email for graduation notification');
+    return false;
+  }
+
+  const transporter = createSMTPTransporter();
+  if (!transporter) {
+    console.error('❌ SMTP transporter not available for graduation email');
+    return false;
+  }
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+      <div style="background: linear-gradient(135deg, #059669 0%, #047857 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">🎓 GB Pant College</h1>
+        <p style="color: #d1fae5; margin: 10px 0 0 0; font-size: 16px;">Alumni Portal</p>
+      </div>
+      <div style="background-color: white; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h2 style="color: #059669; margin: 0 0 20px 0;">🎉 Congratulations on Your Graduation!</h2>
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Dear <strong>${fullName || 'Student'}</strong>,
+        </p>
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Congratulations! You have successfully completed your <strong>${program || 'program'}</strong> from GB Pant College 
+          (Batch of <strong>${passingYear || new Date().getFullYear()}</strong>). 🎓
+        </p>
+        <div style="background: #ecfdf5; border: 1px solid #6ee7b7; padding: 20px; border-radius: 8px; margin: 25px 0;">
+          <p style="color: #065f46; font-size: 15px; line-height: 1.6; margin: 0;">
+            <strong>📌 Important Update:</strong><br/>
+            Your student account has been automatically <strong>converted to an Alumni account</strong> on the GB Pant College Alumni Portal. 
+            You can now log in and update your alumni profile with your current employment status, higher education details, achievements, and more.
+          </p>
+        </div>
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${process.env.FRONTEND_URL || 'https://gbpec-dseu-alumni-portal.onrender.com'}/login" 
+             style="background: linear-gradient(135deg, #059669, #047857); color: white; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-size: 16px; font-weight: bold; display: inline-block;">
+            🚀 Log In to Alumni Portal
+          </a>
+        </div>
+        <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+          <p style="color: #92400e; font-size: 13px; line-height: 1.5; margin: 0;">
+            💡 <strong>Next Steps:</strong> After logging in, please update your alumni profile — add your current employer, LinkedIn profile, location, and other details to stay connected with the GB Pant Alumni Network.
+          </p>
+        </div>
+        <p style="color: #6b7280; font-size: 13px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          We wish you the very best in your future endeavors. Welcome to the GB Pant Alumni family!
+        </p>
+      </div>
+      <div style="text-align: center; margin-top: 20px; color: #9ca3af; font-size: 12px;">
+        <p>© ${new Date().getFullYear()} GB Pant College Alumni Portal. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"GB Pant Alumni Portal" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: '🎓 Congratulations! Your Account Has Been Upgraded to Alumni - GBPANT Portal',
+      html,
+      text: `Dear ${fullName || 'Student'},\n\nCongratulations on completing your ${program || 'program'} from GB Pant College (Batch of ${passingYear || new Date().getFullYear()})!\n\nYour student account has been automatically converted to an Alumni account. Please log in at ${process.env.FRONTEND_URL || 'https://gbpec-dseu-alumni-portal.onrender.com'}/login and update your alumni profile.\n\nWelcome to the GB Pant Alumni family!`
+    });
+
+    console.log('✅ Graduation email sent to:', email.replace(/(.{2}).*@/, '$1***@'));
+    console.log('   Message ID:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to send graduation email:', error.message);
+    return false;
+  }
+};
+
 module.exports = {
   sendOTPEmail,
   isValidEmail,
   sendApprovalEmail,
   sendSubmissionEmail,
   sendRejectionEmail,
+  sendGraduationEmail,
   // Export individual methods for testing
   sendViaSMTP,
   createSMTPTransporter

@@ -56,6 +56,11 @@ const AdminPanelWorkingFull = () => {
   const [deleteModal, setDeleteModal] = useState(null); // { id, full_name, email, user_type }
   const [isDeleting, setIsDeleting] = useState(false);
 
+  // Promotions tab state
+  const [isPromoting, setIsPromoting] = useState(false);
+  const [promotionResult, setPromotionResult] = useState(null); // { promoted_count, graduated_count, promoted, graduated }
+  const [showPromoteConfirm, setShowPromoteConfirm] = useState(false);
+
   const isAdmin = Boolean(
     user?.is_admin ||
     user?.isAdmin ||
@@ -308,6 +313,7 @@ const AdminPanelWorkingFull = () => {
   // ─── Tab Navigation ────────────────────────────────────────────────────────
   const tabs = [
     { id: 'pending', label: '⏳ Pending Approvals', badge: pendingUsers.length || null },
+    { id: 'promotions', label: '🎓 Promotions', badge: null },
     { id: 'delete', label: '🔍 Delete Account', badge: null },
     { id: 'security', label: '🛡️ Security & IP Blocking', badge: null }
   ];
@@ -379,6 +385,144 @@ const AdminPanelWorkingFull = () => {
 
               {/* Scrollable Content */}
               <div className="flex-1 overflow-y-auto p-6">
+
+                {/* ═══ PROMOTIONS TAB ═══════════════════════════════════════ */}
+                {activeTab === 'promotions' && (
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800 mb-1">🎓 Student Semester Promotion</h3>
+                      <p className="text-sm text-gray-500">
+                        Promote all approved students by +1 semester. Students who have completed their maximum
+                        semesters will be automatically graduated and their accounts converted to alumni.
+                      </p>
+                    </div>
+
+                    {/* Rules Card */}
+                    <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                      <h4 className="text-sm font-semibold text-blue-800 mb-3">📋 Program Semester Limits</h4>
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        {[['B.Tech', '8 semesters'], ['Diploma', '6 semesters'], ['M.Tech', '4 semesters'], ['UG Certificate', '2 semesters']].map(([prog, limit]) => (
+                          <div key={prog} className="flex justify-between bg-white rounded-lg px-3 py-2 border border-blue-100">
+                            <span className="font-medium text-gray-700">{prog}</span>
+                            <span className="text-blue-600 font-semibold">{limit}</span>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-xs text-blue-600 mt-3">
+                        ⏰ Auto-promotion also runs every <strong>January 16</strong> (Spring semester) and <strong>July 1</strong> (Fall semester).
+                      </p>
+                    </div>
+
+                    {/* Promote Button */}
+                    {!showPromoteConfirm ? (
+                      <button
+                        onClick={() => setShowPromoteConfirm(true)}
+                        disabled={isPromoting}
+                        className="w-full flex items-center justify-center gap-3 py-4 px-6 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white font-semibold text-base rounded-xl shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50"
+                      >
+                        <span className="text-xl">🎓</span>
+                        Promote All Students (+1 Semester)
+                      </button>
+                    ) : (
+                      <div className="bg-amber-50 border border-amber-300 rounded-xl p-5">
+                        <p className="text-amber-800 font-semibold text-center mb-1">⚠️ Confirm Promotion</p>
+                        <p className="text-amber-700 text-sm text-center mb-4">
+                          This will increment semester for ALL approved students. Students at max semester will be graduated to alumni and receive a graduation email. This cannot be undone.
+                        </p>
+                        <div className="flex gap-3">
+                          <button
+                            onClick={() => setShowPromoteConfirm(false)}
+                            disabled={isPromoting}
+                            className="flex-1 py-2.5 border border-gray-300 rounded-xl text-gray-700 font-medium hover:bg-gray-50 disabled:opacity-50 transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={async () => {
+                              setShowPromoteConfirm(false);
+                              setIsPromoting(true);
+                              setPromotionResult(null);
+                              try {
+                                const response = await api.post('/api/admin/promote-students');
+                                if (response.data.success) {
+                                  setPromotionResult(response.data);
+                                  toast.success(`✅ ${response.data.promoted_count} promoted, ${response.data.graduated_count} graduated!`);
+                                } else {
+                                  toast.error(response.data.message || 'Promotion failed');
+                                }
+                              } catch (error) {
+                                toast.error('Promotion failed: ' + (error.response?.data?.message || error.message));
+                              } finally {
+                                setIsPromoting(false);
+                              }
+                            }}
+                            disabled={isPromoting}
+                            className="flex-1 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold disabled:opacity-50 flex items-center justify-center gap-2 transition-colors"
+                          >
+                            {isPromoting ? (
+                              <><FaSyncAlt className="animate-spin w-4 h-4" /> Promoting...</>
+                            ) : (
+                              '🎓 Yes, Promote All'
+                            )}
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Loading state */}
+                    {isPromoting && (
+                      <div className="flex flex-col items-center justify-center py-10 gap-3">
+                        <FaSyncAlt className="animate-spin w-8 h-8 text-green-500" />
+                        <p className="text-gray-600 font-medium">Promoting students... please wait</p>
+                      </div>
+                    )}
+
+                    {/* Results */}
+                    {promotionResult && !isPromoting && (
+                      <div className="space-y-4">
+                        {/* Summary */}
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 text-center">
+                            <div className="text-3xl font-bold text-blue-600">{promotionResult.promoted_count}</div>
+                            <div className="text-sm text-blue-700 font-medium mt-1">📈 Students Promoted</div>
+                          </div>
+                          <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+                            <div className="text-3xl font-bold text-green-600">{promotionResult.graduated_count}</div>
+                            <div className="text-sm text-green-700 font-medium mt-1">🎓 Graduated to Alumni</div>
+                          </div>
+                        </div>
+
+                        {/* Graduated list */}
+                        {promotionResult.graduated?.length > 0 && (
+                          <div>
+                            <h4 className="text-sm font-semibold text-gray-700 mb-2">🎓 Newly Graduated (Emails Sent)</h4>
+                            <div className="space-y-2 max-h-48 overflow-y-auto">
+                              {promotionResult.graduated.map((g) => (
+                                <div key={g.user_id} className="flex items-center justify-between bg-green-50 border border-green-200 rounded-lg px-3 py-2 text-sm">
+                                  <div>
+                                    <span className="font-medium text-gray-800">{g.full_name}</span>
+                                    <span className="text-gray-500 ml-2 text-xs">{g.email}</span>
+                                  </div>
+                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-semibold">
+                                    {g.program} • {g.passing_year}
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* No students */}
+                        {promotionResult.promoted_count === 0 && promotionResult.graduated_count === 0 && (
+                          <div className="text-center py-6 text-gray-500">
+                            <p className="text-4xl mb-2">🏫</p>
+                            <p className="font-medium">No approved students found to promote.</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* ═══ PENDING APPROVALS TAB ══════════════════════════════════ */}
                 {activeTab === 'pending' && (
