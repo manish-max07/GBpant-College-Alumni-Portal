@@ -343,21 +343,16 @@ router.post('/promote-students', async (req, res) => {
         [gradIds]
       );
 
-      // Query 4: bulk-insert alumni_profiles, skip any that already exist
+      // Query 4: bulk-insert alumni_profiles directly from student_profiles (preserves text[] skills and columns cleanly)
       await client.query(
         `INSERT INTO alumni_profiles
            (user_id, branch, program, passing_year, skills, created_at, updated_at)
-         SELECT data.uid, data.branch, data.program, data.py, data.skills,
+         SELECT sp.user_id, sp.branch, sp.program, $2::int, COALESCE(sp.skills, ARRAY[]::text[]),
                 CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
-         FROM (
-           SELECT UNNEST($1::int[])    AS uid,
-                  UNNEST($2::text[])   AS branch,
-                  UNNEST($3::text[])   AS program,
-                  UNNEST($4::int[])    AS py,
-                  UNNEST($5::text[][]) AS skills
-         ) AS data
+         FROM student_profiles sp
+         WHERE sp.user_id = ANY($1::int[])
          ON CONFLICT (user_id) DO NOTHING`,
-        [gradIds, branches, programs, passingYears, skillsArr]
+        [gradIds, currentYear]
       );
 
       // Query 5: delete all graduating student_profiles in one shot
