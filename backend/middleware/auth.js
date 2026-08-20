@@ -52,7 +52,8 @@ const generateToken = (user) => {
     email: user.email,
     userType: user.user_type,
     profileComplete: user.profile_complete || false,
-    isApproved: user.is_approved || false
+    isApproved: user.is_approved || false,
+    isAdmin: !!(process.env.ADMIN_EMAIL && user.email && user.email.toLowerCase().trim() === process.env.ADMIN_EMAIL.toLowerCase().trim())
   };
 
   return jwt.sign(payload, process.env.JWT_SECRET, {
@@ -85,9 +86,10 @@ const adminOnly = (req, res, next) => {
   }
 
   const adminEmail = process.env.ADMIN_EMAIL;
+  const isMatch = !!(adminEmail && req.user.email && req.user.email.toLowerCase().trim() === adminEmail.toLowerCase().trim());
 
   // Check if user is admin
-  if (!adminEmail || req.user.email !== adminEmail) {
+  if (!isMatch) {
     console.log('❌ Admin access denied for user:', req.user?.email);
     return res.status(403).json({
       success: false,

@@ -56,10 +56,17 @@ const AdminPanelWorkingFull = () => {
   const [deleteModal, setDeleteModal] = useState(null); // { id, full_name, email, user_type }
   const [isDeleting, setIsDeleting] = useState(false);
 
-  const isAdmin = user?.email && ADMIN_EMAIL && user.email === ADMIN_EMAIL;
+  const isAdmin = Boolean(
+    user?.is_admin ||
+    user?.isAdmin ||
+    (user?.email && ADMIN_EMAIL && user.email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim())
+  );
 
   console.log('🔧 AdminPanel Debug:', {
     user: user?.email,
+    userIsAdmin: user?.is_admin,
+    userJWTAdmin: user?.isAdmin,
+    envAdmin: ADMIN_EMAIL,
     isAdmin,
     isVisible,
     activeTab

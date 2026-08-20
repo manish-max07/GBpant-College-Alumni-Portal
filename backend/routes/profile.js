@@ -23,9 +23,16 @@ router.get('/me', authenticateToken, async (req, res) => {
       });
     }
 
+    const userData = user.rows[0];
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const is_admin = !!(adminEmail && userData.email && userData.email.toLowerCase().trim() === adminEmail.toLowerCase().trim());
+
     res.json({
       success: true,
-      user: user.rows[0]
+      user: {
+        ...userData,
+        is_admin
+      }
     });
 
   } catch (error) {
