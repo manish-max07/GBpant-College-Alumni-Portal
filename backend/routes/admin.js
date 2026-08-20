@@ -1,7 +1,7 @@
 const express = require('express');
 const { authenticateToken, adminOnly } = require('../middleware/auth');
 const { pool } = require('../config/database');
-const { sendApprovalEmail } = require('../services/email-service');
+const { sendApprovalEmail, sendRejectionEmail } = require('../services/email-service');
 
 const router = express.Router();
 
@@ -113,7 +113,7 @@ router.put('/reject-user/:id', async (req, res) => {
 
   try {
     const userResult = await pool.query(
-      'SELECT id, email FROM users WHERE id = $1',
+      'SELECT id, email, full_name FROM users WHERE id = $1',
       [id]
     );
 
@@ -129,6 +129,13 @@ router.put('/reject-user/:id', async (req, res) => {
         success: false,
         message: 'Cannot reject/delete the admin account'
       });
+    }
+
+    // Send rejection email before deleting account records
+    try {
+      await sendRejectionEmail(user.email, user.full_name, req.body?.reason);
+    } catch (err) {
+      console.error('⚠️ Rejection email send error:', err.message);
     }
 
     // Delete profile records first (cascading may handle this, but be explicit)

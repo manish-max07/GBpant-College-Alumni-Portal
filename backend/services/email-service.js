@@ -389,6 +389,72 @@ const sendSubmissionEmail = async (email, fullName) => {
   }
 };
 
+/**
+ * Send account rejection/deletion notification email
+ */
+const sendRejectionEmail = async (email, fullName, reason) => {
+  if (!email) {
+    console.error('❌ Missing email for rejection notification');
+    return false;
+  }
+
+  const transporter = createSMTPTransporter();
+  if (!transporter) {
+    console.error('❌ SMTP transporter not available for rejection email');
+    return false;
+  }
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+      <div style="background: linear-gradient(135deg, #ef4444 0%, #b91c1c 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">🎓 GB Pant College</h1>
+        <p style="color: #fee2e2; margin: 10px 0 0 0; font-size: 16px;">Alumni Portal</p>
+      </div>
+      <div style="background-color: white; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h2 style="color: #b91c1c; margin: 0 0 20px 0;">Account Verification Update</h2>
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Dear <strong>${fullName || 'User'}</strong>,
+        </p>
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Thank you for your interest in the GB Pant College Alumni Portal. Following an administrative review of your profile submission, we regret to inform you that your account could not be verified and has been rejected.
+        </p>
+        ${reason ? `
+        <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 8px; margin: 20px 0;">
+          <p style="color: #991b1b; font-size: 14px; margin: 0;">
+            <strong>Reason:</strong> ${reason}
+          </p>
+        </div>` : ''}
+        <p style="color: #4b5563; font-size: 15px; line-height: 1.6;">
+          As per our security and verification policy, unverified account records are deleted from the portal. If you believe this was done in error or you have valid credentials to provide, you are welcome to register again with verified college records.
+        </p>
+        <p style="color: #6b7280; font-size: 13px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          If you have questions, please reach out to the college administration.
+        </p>
+      </div>
+      <div style="text-align: center; margin-top: 20px; color: #9ca3af; font-size: 12px;">
+        <p>© ${new Date().getFullYear()} GB Pant College Alumni Portal. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"GB Pant Alumni Portal" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: 'Update Regarding Your GBPANT Alumni Portal Registration',
+      html,
+      text: `Dear ${fullName || 'User'},\n\nYour registration for the GB Pant College Alumni Portal could not be verified by administration and has been rejected.\n\n${reason ? `Reason: ${reason}\n\n` : ''}You may register again with verified credentials if this was in error.\n\nGB Pant College Alumni Portal`
+    });
+
+    console.log('✅ Rejection email sent to:', email.replace(/(.{2}).*@/, '$1***@'));
+    console.log('   Message ID:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to send rejection email:', error.message);
+    return false;
+  }
+};
+
 const isValidEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
@@ -399,6 +465,7 @@ module.exports = {
   isValidEmail,
   sendApprovalEmail,
   sendSubmissionEmail,
+  sendRejectionEmail,
   // Export individual methods for testing
   sendViaSMTP,
   createSMTPTransporter

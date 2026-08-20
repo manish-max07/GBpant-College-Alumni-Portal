@@ -342,6 +342,25 @@ const Layout = ({ children, showNav = true, showFooter = true }) => {
         </nav>
       )}
 
+      {/* Account Under Review / Verification Alert Banner */}
+      {user && user.profile_complete && !user.is_approved && !user.is_admin && (
+        <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 text-white px-4 py-3 shadow-md border-b border-amber-600">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3 text-sm">
+            <div className="flex items-center gap-3">
+              <span className="text-xl shrink-0 animate-pulse">⏳</span>
+              <div>
+                <span className="font-bold">Account Under Review:</span> Your profile details have been submitted and are currently awaiting administrator verification. Access to Alumni & Student directories will be enabled once approved.
+              </div>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="bg-amber-700/70 border border-amber-300/40 px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider">
+                Pending Approval
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Main Content */}
       <main className="flex-1">
         {children}

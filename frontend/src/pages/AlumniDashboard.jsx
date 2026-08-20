@@ -269,9 +269,15 @@ export default function AlumniDashboard() {
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 leading-tight">
-                    Welcome back, {profile?.profile?.fullName?.split(' ')[0] || 'Alumni'}!
-                    <MdWavingHand className="ml-2 inline text-yellow-300" />
+                  <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold mb-2 leading-tight flex items-center flex-wrap gap-2">
+                    <span>Welcome back, {profile?.profile?.fullName?.split(' ')[0] || 'Alumni'}!</span>
+                    <MdWavingHand className="inline text-yellow-300" />
+                    {user && !user.is_approved && !user.is_admin && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-400/20 text-amber-200 border border-amber-300/40">
+                        <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                        Under Review
+                      </span>
+                    )}
                   </h1>
                   <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-indigo-100 text-sm sm:text-base mb-4">
                     <div className="flex items-center gap-1.5">
