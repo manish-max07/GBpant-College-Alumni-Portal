@@ -63,10 +63,6 @@ const AdminPanelWorkingFull = () => {
   );
 
   console.log('🔧 AdminPanel Debug:', {
-    user: user?.email,
-    userIsAdmin: user?.is_admin,
-    userJWTAdmin: user?.isAdmin,
-    envAdmin: ADMIN_EMAIL,
     isAdmin,
     isVisible,
     activeTab
