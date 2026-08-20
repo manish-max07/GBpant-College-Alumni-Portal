@@ -385,7 +385,16 @@ router.post('/promote-students', async (req, res) => {
 
     await client.query('COMMIT');
 
-    // Respond immediately — well within Vercel's 10s timeout
+    // Send graduation emails BEFORE responding so Vercel serverless doesn't freeze before emails send
+    if (graduated.length > 0) {
+      await Promise.allSettled(
+        graduated.map(g =>
+          sendGraduationEmail(g.email, g.full_name, g.program, g.passing_year)
+            .catch(err => console.error(`⚠️ Graduation email failed for ${g.email}:`, err.message))
+        )
+      );
+    }
+
     res.json({
       success: true,
       message: `Promotion complete. ${toPromote.length} student(s) promoted, ${graduated.length} student(s) graduated to alumni.`,
@@ -400,14 +409,6 @@ router.post('/promote-students', async (req, res) => {
         new_semester: s.new_semester
       })),
       graduated
-    });
-
-    // Graduation emails sent AFTER the HTTP response — never blocks the reply
-    setImmediate(() => {
-      for (const g of graduated) {
-        sendGraduationEmail(g.email, g.full_name, g.program, g.passing_year)
-          .catch(err => console.error(`⚠️ Graduation email failed for ${g.email}:`, err.message));
-      }
     });
 
   } catch (error) {
