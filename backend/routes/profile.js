@@ -356,14 +356,15 @@ router.put('/alumni', authenticateToken, async (req, res) => {
         );
       }
 
-      // Send profile submission notification email in background if user is not yet approved
-      pool.query('SELECT email, full_name, is_approved FROM users WHERE id = $1', [req.user.id])
-        .then(uRes => {
-          if (uRes.rows.length > 0 && !uRes.rows[0].is_approved) {
-            sendSubmissionEmail(uRes.rows[0].email, uRes.rows[0].full_name || sanitizedData.full_name);
-          }
-        })
-        .catch(err => console.error('Failed to trigger alumni submission email:', err.message));
+      // Send profile submission notification email if user is not yet approved
+      try {
+        const uRes = await pool.query('SELECT email, full_name, is_approved FROM users WHERE id = $1', [req.user.id]);
+        if (uRes.rows.length > 0 && !uRes.rows[0].is_approved) {
+          await sendSubmissionEmail(uRes.rows[0].email, uRes.rows[0].full_name || sanitizedData.full_name);
+        }
+      } catch (err) {
+        console.error('Failed to trigger alumni submission email:', err.message);
+      }
     } else {
       // Update existing profile
       profile = await pool.query(
@@ -554,14 +555,15 @@ router.put('/student', authenticateToken, async (req, res) => {
         [req.user.id]
       );
 
-      // Send profile submission notification email in background if user is not yet approved
-      pool.query('SELECT email, full_name, is_approved FROM users WHERE id = $1', [req.user.id])
-        .then(uRes => {
-          if (uRes.rows.length > 0 && !uRes.rows[0].is_approved) {
-            sendSubmissionEmail(uRes.rows[0].email, uRes.rows[0].full_name);
-          }
-        })
-        .catch(err => console.error('Failed to trigger student submission email:', err.message));
+      // Send profile submission notification email if user is not yet approved
+      try {
+        const uRes = await pool.query('SELECT email, full_name, is_approved FROM users WHERE id = $1', [req.user.id]);
+        if (uRes.rows.length > 0 && !uRes.rows[0].is_approved) {
+          await sendSubmissionEmail(uRes.rows[0].email, uRes.rows[0].full_name);
+        }
+      } catch (err) {
+        console.error('Failed to trigger student submission email:', err.message);
+      }
     } else {
       // Update existing profile
       profile = await pool.query(

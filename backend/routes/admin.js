@@ -79,20 +79,24 @@ router.put('/approve-user/:id', async (req, res) => {
 
     // Set is_approved = TRUE
     await pool.query(
-      'UPDATE users SET is_approved = TRUE WHERE id = $1',
-      [id]
+       'UPDATE users SET is_approved = TRUE WHERE id = $1',
+       [id]
     );
 
     console.log(`✅ Admin approved user: ${user.email}`);
 
-    // Send approval email (non-blocking — don't fail the request if email fails)
-    sendApprovalEmail(user.email, user.full_name).catch((err) => {
-      console.error('⚠️ Approval email failed (non-fatal):', err.message);
-    });
+    // Send approval email - awaited for serverless environments (Vercel)
+    let emailSent = false;
+    try {
+      emailSent = await sendApprovalEmail(user.email, user.full_name);
+    } catch (err) {
+      console.error('⚠️ Approval email send error:', err.message);
+    }
 
     res.json({
       success: true,
-      message: `User ${user.email} approved successfully. Approval email sent.`
+      emailSent,
+      message: `User approved successfully.${emailSent ? ' Approval email sent.' : ''}`
     });
   } catch (error) {
     console.error('Approve user error:', error);

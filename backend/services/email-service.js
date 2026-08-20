@@ -304,9 +304,8 @@ const sendApprovalEmail = async (email, fullName) => {
   `;
 
   try {
-    await transporter.verify();
     const info = await transporter.sendMail({
-      from: `"GBPANT Alumni Portal" <${process.env.SMTP_USER}>`,
+      from: `"GB Pant Alumni Portal" <${process.env.SMTP_USER}>`,
       to: email,
       subject: '✅ Your GBPANT Alumni Portal Account Has Been Approved!',
       html,
@@ -373,9 +372,8 @@ const sendSubmissionEmail = async (email, fullName) => {
   `;
 
   try {
-    await transporter.verify();
     const info = await transporter.sendMail({
-      from: `"GBPANT Alumni Portal" <${process.env.SMTP_USER}>`,
+      from: `"GB Pant Alumni Portal" <${process.env.SMTP_USER}>`,
       to: email,
       subject: '📝 Profile Submitted for Verification - GBPANT Alumni Portal',
       html,
