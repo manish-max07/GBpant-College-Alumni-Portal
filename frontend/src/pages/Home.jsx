@@ -366,7 +366,7 @@ export default function Home() {
               {/* Action Buttons */}
               <div className="flex flex-col space-y-3">
                 <a
-                  href="https://drive.google.com/file/d/1BcGl7bX7FmqbacfI0DRgsGC8JPe37i_f/view?usp=sharing"
+                  href="https://drive.google.com/file/d/1YoExfzLVojZdjnmRbgWSoYv96_6t_C1V/view?usp=sharing"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
