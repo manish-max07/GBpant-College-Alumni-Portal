@@ -36,7 +36,8 @@ import {
   FaPlus,
   FaCode,
   FaLaptopCode,
-  FaTags
+  FaTags,
+  FaUserGraduate
 } from 'react-icons/fa';
 import { HiOutlineAcademicCap } from 'react-icons/hi';
 
