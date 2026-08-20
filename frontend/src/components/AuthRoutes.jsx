@@ -44,8 +44,11 @@ export const ProtectedRoute = ({ children }) => {
 
   // If profile is complete but account is not yet approved, show pending screen
   // Admin bypasses this check
+  // NOTE: is_approved may be undefined for old cached user objects (pre-feature).
+  // We treat undefined as approved (safe default) — new logins will have the real value.
   const isAdmin = ADMIN_EMAIL && user?.email === ADMIN_EMAIL;
-  if (user && user.profile_complete && !user.is_approved && !isAdmin) {
+  const isApproved = user?.is_approved !== false; // undefined → treat as approved
+  if (user && user.profile_complete && !isApproved && !isAdmin) {
     console.log('⏳ ProtectedRoute: Profile complete but account pending approval');
     return <PendingApproval />;
   }

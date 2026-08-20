@@ -86,13 +86,19 @@ router.get('/alumni', authenticateToken, async (req, res) => {
  */
 router.get('/alumni-list', authenticateToken, async (req, res) => {
   try {
-    // Requesting user must be approved (or admin)
+    // Requesting user must be approved — always check DB (token may be stale)
     const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-    if (!req.user.isApproved && req.user.email !== ADMIN_EMAIL) {
-      return res.status(403).json({
-        success: false,
-        message: 'Your account is pending approval.'
-      });
+    if (req.user.email !== ADMIN_EMAIL) {
+      const approvalCheck = await pool.query(
+        'SELECT is_approved FROM users WHERE id = $1',
+        [req.user.id]
+      );
+      if (approvalCheck.rows.length === 0 || !approvalCheck.rows[0].is_approved) {
+        return res.status(403).json({
+          success: false,
+          message: 'Your account is pending approval.'
+        });
+      }
     }
 
     const alumniList = await pool.query(
@@ -156,13 +162,19 @@ router.get('/student-list', authenticateToken, async (req, res) => {
       });
     }
 
-    // Requesting alumni must be approved
+    // Requesting alumni must be approved — always check DB (token may be stale)
     const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
-    if (!req.user.isApproved && req.user.email !== ADMIN_EMAIL) {
-      return res.status(403).json({
-        success: false,
-        message: 'Your account is pending approval.'
-      });
+    if (req.user.email !== ADMIN_EMAIL) {
+      const approvalCheck = await pool.query(
+        'SELECT is_approved FROM users WHERE id = $1',
+        [req.user.id]
+      );
+      if (approvalCheck.rows.length === 0 || !approvalCheck.rows[0].is_approved) {
+        return res.status(403).json({
+          success: false,
+          message: 'Your account is pending approval.'
+        });
+      }
     }
 
     const studentList = await pool.query(
