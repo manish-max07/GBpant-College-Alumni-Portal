@@ -485,11 +485,26 @@ async function runSemesterPromotion(triggerLabel) {
 
         if (existingAlumni.rows.length === 0) {
           await client.query(
-            `INSERT INTO alumni_profiles (user_id, branch, program, passing_year, skills, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-            [student.user_id, student.branch, student.program, currentYear, student.skills || []]
+            `INSERT INTO alumni_profiles (user_id, branch, program, passing_year, skills, linkedin_profile, github_profile, created_at, updated_at)
+             SELECT sp.user_id, sp.branch, sp.program, $2::int, COALESCE(sp.skills, ARRAY[]::text[]),
+                    sp.linkedin_profile, sp.github_profile, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+             FROM student_profiles sp
+             WHERE sp.user_id = $1
+             ON CONFLICT (user_id) DO NOTHING`,
+            [student.user_id, currentYear]
           );
         }
+
+        // Archive historical student profile
+        await client.query(
+          `INSERT INTO archived_student_profiles
+             (user_id, program, branch, final_semester, final_year, cgpa, interests, skills, projects, internships, linkedin_profile, github_profile, graduated_at, created_at)
+           SELECT sp.user_id, sp.program, sp.branch, sp.semester, sp.current_year, sp.cgpa, sp.interests, sp.skills,
+                  sp.projects, sp.internships, sp.linkedin_profile, sp.github_profile, CURRENT_TIMESTAMP, sp.created_at
+           FROM student_profiles sp
+           WHERE sp.user_id = $1`,
+          [student.user_id]
+        );
 
         await client.query('DELETE FROM student_profiles WHERE user_id = $1', [student.user_id]);
 

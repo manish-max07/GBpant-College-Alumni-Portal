@@ -79,8 +79,8 @@ router.put('/approve-user/:id', async (req, res) => {
 
     // Set is_approved = TRUE
     await pool.query(
-       'UPDATE users SET is_approved = TRUE WHERE id = $1',
-       [id]
+      'UPDATE users SET is_approved = TRUE WHERE id = $1',
+      [id]
     );
 
     console.log(`✅ Admin approved user: ${user.email}`);
@@ -292,7 +292,7 @@ router.post('/promote-students', async (req, res) => {
 
     const currentYear = new Date().getFullYear();
     const toGraduate = [];
-    const toPromote  = [];
+    const toPromote = [];
 
     for (const s of students) {
       const maxSem = MAX_SEMESTERS[s.program] || 8;
@@ -300,7 +300,7 @@ router.post('/promote-students', async (req, res) => {
       if (curSem >= maxSem) {
         toGraduate.push({ ...s, passing_year: currentYear });
       } else {
-        const newSem  = curSem + 1;
+        const newSem = curSem + 1;
         const newYear = Math.ceil(newSem / 2);
         toPromote.push({ ...s, new_semester: newSem, new_year: newYear });
       }
@@ -308,8 +308,8 @@ router.post('/promote-students', async (req, res) => {
 
     // Query 2: bulk promote via UNNEST — single UPDATE for all promoting students
     if (toPromote.length > 0) {
-      const userIds  = toPromote.map(s => s.user_id);
-      const newSems  = toPromote.map(s => s.new_semester);
+      const userIds = toPromote.map(s => s.user_id);
+      const newSems = toPromote.map(s => s.new_semester);
       const newYears = toPromote.map(s => s.new_year);
 
       await client.query(
@@ -330,11 +330,11 @@ router.post('/promote-students', async (req, res) => {
     // Queries 3-5: bulk graduate — 3 queries instead of 3 * N queries
     let graduated = [];
     if (toGraduate.length > 0) {
-      const gradIds      = toGraduate.map(s => s.user_id);
-      const branches     = toGraduate.map(s => s.branch);
-      const programs     = toGraduate.map(s => s.program);
+      const gradIds = toGraduate.map(s => s.user_id);
+      const branches = toGraduate.map(s => s.branch);
+      const programs = toGraduate.map(s => s.program);
       const passingYears = toGraduate.map(() => currentYear);
-      const skillsArr    = toGraduate.map(s => s.skills || []);
+      const skillsArr = toGraduate.map(s => s.skills || []);
 
       // Query 3: flip user_type for all graduating students at once
       await client.query(
@@ -343,11 +343,12 @@ router.post('/promote-students', async (req, res) => {
         [gradIds]
       );
 
-      // Query 4: bulk-insert alumni_profiles directly from student_profiles (preserves text[] skills and columns cleanly)
+      // Query 4: bulk-insert alumni_profiles directly from student_profiles (copies branch, program, skills, linkedin, github)
       await client.query(
         `INSERT INTO alumni_profiles
-           (user_id, branch, program, passing_year, skills, created_at, updated_at)
+           (user_id, branch, program, passing_year, skills, linkedin_profile, github_profile, created_at, updated_at)
          SELECT sp.user_id, sp.branch, sp.program, $2::int, COALESCE(sp.skills, ARRAY[]::text[]),
+                sp.linkedin_profile, sp.github_profile,
                 CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
          FROM student_profiles sp
          WHERE sp.user_id = ANY($1::int[])
@@ -355,18 +356,29 @@ router.post('/promote-students', async (req, res) => {
         [gradIds, currentYear]
       );
 
-      // Query 5: delete all graduating student_profiles in one shot
+      // Query 5: archive historical student details (projects, internships, cgpa, interests, semester, etc.)
+      await client.query(
+        `INSERT INTO archived_student_profiles
+           (user_id, program, branch, final_semester, final_year, cgpa, interests, skills, projects, internships, linkedin_profile, github_profile, graduated_at, created_at)
+         SELECT sp.user_id, sp.program, sp.branch, sp.semester, sp.current_year, sp.cgpa, sp.interests, sp.skills,
+                sp.projects, sp.internships, sp.linkedin_profile, sp.github_profile, CURRENT_TIMESTAMP, sp.created_at
+         FROM student_profiles sp
+         WHERE sp.user_id = ANY($1::int[])`,
+        [gradIds]
+      );
+
+      // Query 6: delete all graduating student_profiles in one shot
       await client.query(
         `DELETE FROM student_profiles WHERE user_id = ANY($1::int[])`,
         [gradIds]
       );
 
       graduated = toGraduate.map(s => ({
-        user_id:      s.user_id,
-        email:        s.email,
-        full_name:    s.full_name,
-        program:      s.program,
-        branch:       s.branch,
+        user_id: s.user_id,
+        email: s.email,
+        full_name: s.full_name,
+        program: s.program,
+        branch: s.branch,
         passing_year: currentYear
       }));
     }
@@ -377,13 +389,13 @@ router.post('/promote-students', async (req, res) => {
     res.json({
       success: true,
       message: `Promotion complete. ${toPromote.length} student(s) promoted, ${graduated.length} student(s) graduated to alumni.`,
-      promoted_count:  toPromote.length,
+      promoted_count: toPromote.length,
       graduated_count: graduated.length,
       promoted: toPromote.map(s => ({
-        user_id:      s.user_id,
-        email:        s.email,
-        full_name:    s.full_name,
-        program:      s.program,
+        user_id: s.user_id,
+        email: s.email,
+        full_name: s.full_name,
+        program: s.program,
         old_semester: s.semester,
         new_semester: s.new_semester
       })),
