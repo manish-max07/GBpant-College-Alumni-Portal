@@ -4,6 +4,7 @@ const cors = require('cors');
 const captchaRoutes = require('./routes/captcha');
 const authRoutes = require('./routes/auth');
 const profileRoutes = require('./routes/profile');
+const adminRoutes = require('./routes/admin');
 const debugRoutes = require('./routes/debug');
 const securityRoutes = require('./routes/security');
 const { captchaRateLimit, captchaErrorHandler, captchaLogger } = require('./middleware/captcha');
@@ -69,6 +70,7 @@ app.use(generalDatabaseBlocking);
 // JWT structure validation for protected routes
 app.use('/api/profile', validateJWTStructure);
 app.use('/api/auth/me', validateJWTStructure);
+app.use('/api/admin', validateJWTStructure);
 
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
@@ -346,6 +348,9 @@ if (process.env.NODE_ENV === 'development') {
   app.use('/api/profile', TokenValidator.debugMiddleware);
 }
 app.use('/api/profile', profileRoutes);
+
+// Admin routes (approval workflow, user management)
+app.use('/api/admin', adminRoutes);
 
 // Admin-only blocked entities management routes
 const blockedEntitiesRoutes = require('./routes/blocked-entities');

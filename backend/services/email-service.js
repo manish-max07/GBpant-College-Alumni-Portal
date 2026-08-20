@@ -247,8 +247,82 @@ const sendOTPEmail = async (email, otp, type = 'signup') => {
 };
 
 /**
- * Validate email format
+ * Send account approval notification email
  */
+const sendApprovalEmail = async (email, fullName) => {
+  if (!email) {
+    console.error('❌ Missing email for approval notification');
+    return false;
+  }
+
+  const transporter = createSMTPTransporter();
+  if (!transporter) {
+    console.error('❌ SMTP transporter not available for approval email');
+    return false;
+  }
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+      <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">🎓 GB Pant College</h1>
+        <p style="color: #d1fae5; margin: 10px 0 0 0; font-size: 16px;">Alumni Portal</p>
+      </div>
+      <div style="background-color: white; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h2 style="color: #059669; margin: 0 0 20px 0;">✅ Account Approved!</h2>
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Dear <strong>${fullName || 'User'}</strong>,
+        </p>
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+          We're delighted to inform you that your GB Pant College Alumni Portal account has been reviewed and <strong style="color: #059669;">approved</strong>!
+        </p>
+        <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 25px; text-align: center; border-radius: 10px; margin: 30px 0;">
+          <p style="color: white; font-size: 18px; font-weight: bold; margin: 0;">You can now log in and access all features of the alumni portal.</p>
+        </div>
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+          As a verified member, you can now:
+        </p>
+        <ul style="color: #4b5563; font-size: 15px; line-height: 1.8; padding-left: 20px;">
+          <li>Browse the alumni and student directory</li>
+          <li>Connect with fellow alumni and current students</li>
+          <li>Share your professional journey and achievements</li>
+          <li>Update your profile anytime from your dashboard</li>
+        </ul>
+        <div style="text-align: center; margin-top: 30px;">
+          <a href="${process.env.FRONTEND_URL || 'http://localhost:5173'}/login"
+             style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 14px 32px; text-decoration: none; border-radius: 8px; font-size: 16px; font-weight: bold; display: inline-block;">
+            Login to Portal →
+          </a>
+        </div>
+        <p style="color: #6b7280; font-size: 13px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          If you have any questions, feel free to reach out to the admin team.
+        </p>
+      </div>
+      <div style="text-align: center; margin-top: 20px; color: #9ca3af; font-size: 12px;">
+        <p>© ${new Date().getFullYear()} GB Pant College Alumni Portal. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.verify();
+    const info = await transporter.sendMail({
+      from: `"GBPANT Alumni Portal" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: '✅ Your GBPANT Alumni Portal Account Has Been Approved!',
+      html,
+      text: `Dear ${fullName || 'User'},\n\nYour GB Pant College Alumni Portal account has been approved! You can now log in and access all features.\n\nLogin at: ${process.env.FRONTEND_URL || 'http://localhost:5173'}/login\n\nWelcome to the community!`
+    });
+
+    console.log('✅ Approval email sent to:', email.replace(/(.{2}).*@/, '$1***@'));
+    console.log('   Message ID:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to send approval email:', error.message);
+    return false;
+  }
+};
+
+
 const isValidEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
@@ -257,6 +331,7 @@ const isValidEmail = (email) => {
 module.exports = {
   sendOTPEmail,
   isValidEmail,
+  sendApprovalEmail,
   // Export individual methods for testing
   sendViaSMTP,
   createSMTPTransporter

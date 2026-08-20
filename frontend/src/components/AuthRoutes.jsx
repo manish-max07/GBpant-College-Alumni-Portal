@@ -2,10 +2,13 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import Loading from './Loading';
+import PendingApproval from './PendingApproval';
+
+const ADMIN_EMAIL = import.meta.env.VITE_ADMIN_EMAIL;
 
 // Component to protect routes that require authentication
 export const ProtectedRoute = ({ children }) => {
-  const { isAuthenticated, loading, initialCheckComplete } = useAuth();
+  const { isAuthenticated, loading, initialCheckComplete, user } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -37,6 +40,14 @@ export const ProtectedRoute = ({ children }) => {
   if (!isAuthenticated) {
     console.log('❌ ProtectedRoute: Not authenticated after initial check, will redirect');
     return null;
+  }
+
+  // If profile is complete but account is not yet approved, show pending screen
+  // Admin bypasses this check
+  const isAdmin = ADMIN_EMAIL && user?.email === ADMIN_EMAIL;
+  if (user && user.profile_complete && !user.is_approved && !isAdmin) {
+    console.log('⏳ ProtectedRoute: Profile complete but account pending approval');
+    return <PendingApproval />;
   }
 
   console.log('✅ ProtectedRoute: Rendering protected content');

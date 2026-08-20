@@ -192,6 +192,12 @@ export default function FirstTimeForm() {
         toast.error('Please select your current status - employed, pursuing higher education, preparing for competitive exams, or seeking opportunities');
         return;
       }
+
+      // LinkedIn profile is mandatory for alumni
+      if (!formData.linkedInProfile || !formData.linkedInProfile.includes('linkedin.com')) {
+        toast.error('A valid LinkedIn profile URL (e.g. https://linkedin.com/in/yourname) is required');
+        return;
+      }
     } else if (userType === 'student') {
       // Get effective branch and program values (custom or selected)
       const effectiveBranch = showCustomBranch ? formData.customBranch : formData.branch;
@@ -213,9 +219,16 @@ export default function FirstTimeForm() {
         toast.error('Please enter your custom program name');
         return;
       }
+
+      // LinkedIn profile is mandatory for students
+      if (!formData.linkedinProfile || !formData.linkedinProfile.includes('linkedin.com')) {
+        toast.error('A valid LinkedIn profile URL (e.g. https://linkedin.com/in/yourname) is required');
+        return;
+      }
     }
 
     setLoading(true);
+
 
     try {
       const token = localStorage.getItem('token');

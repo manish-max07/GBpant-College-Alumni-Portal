@@ -51,7 +51,8 @@ const generateToken = (user) => {
     id: user.id,
     email: user.email,
     userType: user.user_type,
-    profileComplete: user.profile_complete || false
+    profileComplete: user.profile_complete || false,
+    isApproved: user.is_approved || false
   };
 
   return jwt.sign(payload, process.env.JWT_SECRET, {

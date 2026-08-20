@@ -12,7 +12,7 @@ const router = express.Router();
 router.get('/me', authenticateToken, async (req, res) => {
   try {
     const user = await pool.query(
-      'SELECT id, full_name, email, mobile, roll_no, user_type, profile_complete, profile_picture_url FROM users WHERE id = $1',
+      'SELECT id, full_name, email, mobile, roll_no, user_type, profile_complete, is_approved, profile_picture_url FROM users WHERE id = $1',
       [req.user.id]
     );
 
@@ -86,6 +86,15 @@ router.get('/alumni', authenticateToken, async (req, res) => {
  */
 router.get('/alumni-list', authenticateToken, async (req, res) => {
   try {
+    // Requesting user must be approved (or admin)
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+    if (!req.user.isApproved && req.user.email !== ADMIN_EMAIL) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account is pending approval.'
+      });
+    }
+
     const alumniList = await pool.query(
       `SELECT 
         u.full_name,
@@ -113,6 +122,7 @@ router.get('/alumni-list', authenticateToken, async (req, res) => {
        FROM alumni_profiles ap 
        JOIN users u ON ap.user_id = u.id 
        WHERE u.user_type = 'alumni'
+         AND u.is_approved = TRUE
        ORDER BY ap.passing_year DESC, u.full_name ASC`
     );
 
@@ -146,6 +156,15 @@ router.get('/student-list', authenticateToken, async (req, res) => {
       });
     }
 
+    // Requesting alumni must be approved
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+    if (!req.user.isApproved && req.user.email !== ADMIN_EMAIL) {
+      return res.status(403).json({
+        success: false,
+        message: 'Your account is pending approval.'
+      });
+    }
+
     const studentList = await pool.query(
       `SELECT 
         u.full_name,
@@ -165,6 +184,7 @@ router.get('/student-list', authenticateToken, async (req, res) => {
        FROM student_profiles sp 
        JOIN users u ON sp.user_id = u.id 
        WHERE u.user_type = 'student' 
+         AND u.is_approved = TRUE
          AND sp.branch IS NOT NULL 
          AND sp.program IS NOT NULL
        ORDER BY sp.current_year DESC, sp.cgpa DESC, u.full_name ASC`
@@ -250,6 +270,14 @@ router.put('/alumni', authenticateToken, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Branch, program, and passing year are required'
+      });
+    }
+
+    // LinkedIn profile validation
+    if (!linkedin_profile || !linkedin_profile.includes('linkedin.com')) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid LinkedIn profile URL (containing linkedin.com) is required'
       });
     }
 
@@ -440,6 +468,14 @@ router.put('/student', authenticateToken, async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Branch, program, current year, and semester are required'
+      });
+    }
+
+    // LinkedIn profile validation
+    if (!linkedin_profile || !linkedin_profile.includes('linkedin.com')) {
+      return res.status(400).json({
+        success: false,
+        message: 'A valid LinkedIn profile URL (containing linkedin.com) is required'
       });
     }
 
