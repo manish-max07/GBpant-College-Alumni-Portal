@@ -23,8 +23,7 @@ import Settings from './pages/Settings';
 import CaptchaTest from './pages/CaptchaTest';
 import DebugCaptcha from './pages/DebugCaptcha';
 import NotFound from './pages/NotFound';
-import AdminPanel from './components/AdminPanel';
-import AdminPanelFixed from './components/AdminPanelWorkingFull';
+import AdminPanelWorkingFull from './components/AdminPanelWorkingFull';
 
 function App() {
   return (
@@ -114,7 +113,7 @@ function App() {
       <AuthDebug />
       
       {/* Admin Panel - only visible to admin users */}
-      <AdminPanelFixed />
+      <AdminPanelWorkingFull />
       
       <Toaster
         position="top-right"

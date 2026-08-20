@@ -5,7 +5,6 @@ import toast from 'react-hot-toast';
 import Layout from '../components/Layout';
 import PhoneInput from '../components/PhoneInput';
 import ProfilePicture from '../components/ProfilePicture';
-import AdminPanel from '../components/AdminPanel';
 import { 
   FaUser, 
   FaEdit, 
@@ -228,7 +227,6 @@ export default function StudentDashboard() {
             </div>
           </div>
         </Layout>
-        <AdminPanel />
       </>
     );
   }
@@ -990,7 +988,6 @@ export default function StudentDashboard() {
         </div>
       )}
     </Layout>
-    <AdminPanel />
     </>
   );
 }
