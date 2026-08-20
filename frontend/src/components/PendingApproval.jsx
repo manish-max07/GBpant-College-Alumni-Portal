@@ -97,16 +97,10 @@ const PendingApproval = () => {
             </button>
 
             <p className="text-center text-gray-400 text-xs mt-4">
-              Have questions? Contact{' '}
-              {import.meta.env.VITE_ADMIN_EMAIL ? (
-                <a href={`mailto:${import.meta.env.VITE_ADMIN_EMAIL}`} className="text-indigo-500 hover:underline">
-                  the admin
-                </a>
-              ) : (
-                <a href="/contact" className="text-indigo-500 hover:underline">
-                  support
-                </a>
-              )}
+              Have questions?{' '}
+              <a href="/contact" className="text-indigo-500 hover:underline">
+                Contact Support
+              </a>
             </p>
           </div>
         </div>
