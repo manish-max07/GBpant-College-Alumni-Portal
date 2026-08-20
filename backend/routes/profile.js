@@ -90,7 +90,7 @@ router.get('/alumni', authenticateToken, async (req, res) => {
 
 /**
  * GET /api/profile/alumni-list
- * Get list of all alumni with their basic info for students
+ * Get list of alumni with server-side pagination, filtering, and batch counts
  */
 router.get('/alumni-list', authenticateToken, async (req, res) => {
   try {
@@ -109,6 +109,58 @@ router.get('/alumni-list', authenticateToken, async (req, res) => {
       }
     }
 
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 9));
+    const offset = (page - 1) * limit;
+
+    const { search, passing_year, branch, program, location } = req.query;
+
+    // Base WHERE conditions
+    const whereClauses = ["u.user_type = 'alumni'", "u.is_approved = TRUE"];
+    const queryParams = [];
+
+    if (search && search.trim()) {
+      queryParams.push(`%${search.trim()}%`);
+      whereClauses.push(
+        `(u.full_name ILIKE $${queryParams.length} OR ap.employer ILIKE $${queryParams.length} OR ap.position ILIKE $${queryParams.length} OR ap.skills::text ILIKE $${queryParams.length})`
+      );
+    }
+
+    if (passing_year && passing_year !== 'all') {
+      queryParams.push(parseInt(passing_year));
+      whereClauses.push(`ap.passing_year = $${queryParams.length}`);
+    }
+
+    if (branch && branch !== 'all') {
+      queryParams.push(branch);
+      whereClauses.push(`ap.branch = $${queryParams.length}`);
+    }
+
+    if (program && program !== 'all') {
+      queryParams.push(program);
+      whereClauses.push(`ap.program = $${queryParams.length}`);
+    }
+
+    if (location && location !== 'all') {
+      queryParams.push(`%${location}%`);
+      whereClauses.push(`(ap.location ILIKE $${queryParams.length} OR ap.institution_country ILIKE $${queryParams.length})`);
+    }
+
+    const whereSql = `WHERE ${whereClauses.join(' AND ')}`;
+
+    // 1. Get total count matching current filters
+    const countResult = await pool.query(
+      `SELECT COUNT(*) AS total 
+       FROM alumni_profiles ap 
+       JOIN users u ON ap.user_id = u.id 
+       ${whereSql}`,
+      queryParams
+    );
+    const total = parseInt(countResult.rows[0]?.total || 0);
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    // 2. Fetch paginated list
+    const listParams = [...queryParams, limit, offset];
     const alumniList = await pool.query(
       `SELECT 
         u.full_name,
@@ -135,15 +187,36 @@ router.get('/alumni-list', authenticateToken, async (req, res) => {
         ap.availability_status
        FROM alumni_profiles ap 
        JOIN users u ON ap.user_id = u.id 
-       WHERE u.user_type = 'alumni'
-         AND u.is_approved = TRUE
-       ORDER BY ap.passing_year DESC, u.full_name ASC`
+       ${whereSql}
+       ORDER BY ap.passing_year DESC, u.full_name ASC
+       LIMIT $${listParams.length - 1} OFFSET $${listParams.length}`,
+      listParams
+    );
+
+    // 3. Get aggregated batch counts across all approved alumni
+    const batchesResult = await pool.query(
+      `SELECT ap.passing_year AS year, COUNT(*)::int AS count 
+       FROM alumni_profiles ap 
+       JOIN users u ON ap.user_id = u.id 
+       WHERE u.user_type = 'alumni' 
+         AND u.is_approved = TRUE 
+         AND ap.passing_year IS NOT NULL 
+       GROUP BY ap.passing_year 
+       ORDER BY ap.passing_year DESC`
     );
 
     res.json({
       success: true,
       alumni: alumniList.rows,
-      total: alumniList.rows.length,
+      pagination: {
+        total,
+        totalPages,
+        currentPage: page,
+        limit,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      },
+      batches: batchesResult.rows,
       message: alumniList.rows.length > 0 ? 'Alumni list retrieved successfully' : 'No alumni found'
     });
 
@@ -158,7 +231,7 @@ router.get('/alumni-list', authenticateToken, async (req, res) => {
 
 /**
  * GET /api/profile/student-list
- * Get list of all students with their basic info for alumni
+ * Get list of students with server-side pagination, filtering, and year counts
  */
 router.get('/student-list', authenticateToken, async (req, res) => {
   try {
@@ -185,6 +258,58 @@ router.get('/student-list', authenticateToken, async (req, res) => {
       }
     }
 
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 9));
+    const offset = (page - 1) * limit;
+
+    const { search, current_year, branch, semester } = req.query;
+
+    // Base WHERE conditions
+    const whereClauses = [
+      "u.user_type = 'student'",
+      "u.is_approved = TRUE",
+      "sp.branch IS NOT NULL",
+      "sp.program IS NOT NULL"
+    ];
+    const queryParams = [];
+
+    if (search && search.trim()) {
+      queryParams.push(`%${search.trim()}%`);
+      whereClauses.push(
+        `(u.full_name ILIKE $${queryParams.length} OR u.roll_no ILIKE $${queryParams.length} OR sp.skills::text ILIKE $${queryParams.length} OR sp.interests::text ILIKE $${queryParams.length})`
+      );
+    }
+
+    if (current_year && current_year !== 'all') {
+      queryParams.push(parseInt(current_year));
+      whereClauses.push(`sp.current_year = $${queryParams.length}`);
+    }
+
+    if (branch && branch !== 'all') {
+      queryParams.push(branch);
+      whereClauses.push(`sp.branch = $${queryParams.length}`);
+    }
+
+    if (semester && semester !== 'all') {
+      queryParams.push(parseInt(semester));
+      whereClauses.push(`sp.semester = $${queryParams.length}`);
+    }
+
+    const whereSql = `WHERE ${whereClauses.join(' AND ')}`;
+
+    // 1. Get total count matching current filters
+    const countResult = await pool.query(
+      `SELECT COUNT(*) AS total 
+       FROM student_profiles sp 
+       JOIN users u ON sp.user_id = u.id 
+       ${whereSql}`,
+      queryParams
+    );
+    const total = parseInt(countResult.rows[0]?.total || 0);
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    // 2. Fetch paginated list
+    const listParams = [...queryParams, limit, offset];
     const studentList = await pool.query(
       `SELECT 
         u.full_name,
@@ -203,17 +328,36 @@ router.get('/student-list', authenticateToken, async (req, res) => {
         sp.github_profile
        FROM student_profiles sp 
        JOIN users u ON sp.user_id = u.id 
+       ${whereSql}
+       ORDER BY sp.current_year DESC, sp.cgpa DESC, u.full_name ASC
+       LIMIT $${listParams.length - 1} OFFSET $${listParams.length}`,
+      listParams
+    );
+
+    // 3. Get aggregated year counts across all approved students
+    const batchesResult = await pool.query(
+      `SELECT sp.current_year AS year, COUNT(*)::int AS count 
+       FROM student_profiles sp 
+       JOIN users u ON sp.user_id = u.id 
        WHERE u.user_type = 'student' 
-         AND u.is_approved = TRUE
-         AND sp.branch IS NOT NULL 
-         AND sp.program IS NOT NULL
-       ORDER BY sp.current_year DESC, sp.cgpa DESC, u.full_name ASC`
+         AND u.is_approved = TRUE 
+         AND sp.current_year IS NOT NULL 
+       GROUP BY sp.current_year 
+       ORDER BY sp.current_year DESC`
     );
 
     res.json({
       success: true,
       students: studentList.rows,
-      total: studentList.rows.length,
+      pagination: {
+        total,
+        totalPages,
+        currentPage: page,
+        limit,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      },
+      batches: batchesResult.rows,
       message: studentList.rows.length > 0 ? 'Student list retrieved successfully' : 'No students found'
     });
 
