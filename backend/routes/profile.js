@@ -361,6 +361,13 @@ router.get('/student-list', authenticateToken, async (req, res) => {
       message: studentList.rows.length > 0 ? 'Student list retrieved successfully' : 'No students found'
     });
 
+  } catch (error) {
+    console.error('Get student list error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Internal server error'
+    });
+  }
 });
 
 /**
