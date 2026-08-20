@@ -378,8 +378,8 @@ export default function AlumniList() {
 
           {/* Alumni Grid / Loading / Empty */}
           {loading ? (
-            <div className="py-20 flex flex-col items-center justify-center gap-3">
-              <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-200 border-t-indigo-600"></div>
+            <div className="py-20 flex flex-col items-center justify-center gap-3 text-center">
+              <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-200 border-t-indigo-600 mx-auto"></div>
               <p className="text-slate-500 text-sm">Loading alumni directory...</p>
             </div>
           ) : alumni.length > 0 ? (
