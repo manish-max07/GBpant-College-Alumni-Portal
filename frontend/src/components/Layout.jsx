@@ -73,6 +73,7 @@ const Layout = ({ children, showNav = true, showFooter = true }) => {
             ]
           : [
               { name: 'Alumni List', href: '/alumni-list', icon: <FaUsers /> },
+              { name: 'Fellow Students', href: '/fellow-students', icon: <FaUserGraduate /> },
             ]
         ),
         { name: 'Settings', href: '/settings', icon: <FaCog /> },

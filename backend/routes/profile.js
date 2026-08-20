@@ -361,8 +361,134 @@ router.get('/student-list', authenticateToken, async (req, res) => {
       message: studentList.rows.length > 0 ? 'Student list retrieved successfully' : 'No students found'
     });
 
+});
+
+/**
+ * GET /api/profile/fellow-students
+ * Dedicated student-to-student peer directory with basic networking info.
+ * Only accessible to approved current students (and admin).
+ */
+router.get('/fellow-students', authenticateToken, async (req, res) => {
+  try {
+    const ADMIN_EMAIL = process.env.ADMIN_EMAIL;
+    const isAdmin = !!(ADMIN_EMAIL && req.user.email && req.user.email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim());
+
+    // Only current students (or admin) can access fellow student peer list
+    if (req.user.userType !== 'student' && !isAdmin) {
+      return res.status(403).json({
+        success: false,
+        message: 'Access denied. Current students only.'
+      });
+    }
+
+    // Must be approved student
+    if (!isAdmin) {
+      const approvalCheck = await pool.query(
+        'SELECT is_approved FROM users WHERE id = $1',
+        [req.user.id]
+      );
+      if (approvalCheck.rows.length === 0 || !approvalCheck.rows[0].is_approved) {
+        return res.status(403).json({
+          success: false,
+          message: 'Your account is pending approval.'
+        });
+      }
+    }
+
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 12));
+    const offset = (page - 1) * limit;
+
+    const { search, current_year, branch } = req.query;
+
+    // Base WHERE conditions
+    const whereClauses = [
+      "u.user_type = 'student'",
+      "u.is_approved = TRUE",
+      "sp.branch IS NOT NULL",
+      "sp.program IS NOT NULL"
+    ];
+    const queryParams = [];
+
+    if (search && search.trim()) {
+      queryParams.push(`%${search.trim()}%`);
+      whereClauses.push(
+        `(u.full_name ILIKE $${queryParams.length} OR sp.branch ILIKE $${queryParams.length} OR sp.program ILIKE $${queryParams.length})`
+      );
+    }
+
+    if (current_year && current_year !== 'all') {
+      queryParams.push(parseInt(current_year));
+      whereClauses.push(`sp.current_year = $${queryParams.length}`);
+    }
+
+    if (branch && branch !== 'all') {
+      queryParams.push(branch);
+      whereClauses.push(`sp.branch = $${queryParams.length}`);
+    }
+
+    const whereSql = `WHERE ${whereClauses.join(' AND ')}`;
+
+    // 1. Total count matching current filters
+    const countResult = await pool.query(
+      `SELECT COUNT(*) AS total 
+       FROM student_profiles sp 
+       JOIN users u ON sp.user_id = u.id 
+       ${whereSql}`,
+      queryParams
+    );
+    const total = parseInt(countResult.rows[0]?.total || 0);
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    // 2. Fetch paginated peer list (limited to peer networking fields)
+    const listParams = [...queryParams, limit, offset];
+    const studentList = await pool.query(
+      `SELECT 
+        u.id,
+        u.full_name,
+        u.profile_picture_url,
+        sp.current_year,
+        sp.branch,
+        sp.program,
+        sp.semester,
+        sp.linkedin_profile
+       FROM student_profiles sp 
+       JOIN users u ON sp.user_id = u.id 
+       ${whereSql}
+       ORDER BY sp.current_year DESC, sp.branch ASC, u.full_name ASC
+       LIMIT $${listParams.length - 1} OFFSET $${listParams.length}`,
+      listParams
+    );
+
+    // 3. Aggregate year counts for filter tabs
+    const batchesResult = await pool.query(
+      `SELECT sp.current_year AS year, COUNT(*)::int AS count 
+       FROM student_profiles sp 
+       JOIN users u ON sp.user_id = u.id 
+       WHERE u.user_type = 'student' 
+         AND u.is_approved = TRUE 
+         AND sp.current_year IS NOT NULL 
+       GROUP BY sp.current_year 
+       ORDER BY sp.current_year DESC`
+    );
+
+    res.json({
+      success: true,
+      students: studentList.rows,
+      pagination: {
+        total,
+        totalPages,
+        currentPage: page,
+        limit,
+        hasNext: page < totalPages,
+        hasPrev: page > 1
+      },
+      batches: batchesResult.rows,
+      message: studentList.rows.length > 0 ? 'Fellow students retrieved successfully' : 'No fellow students found'
+    });
+
   } catch (error) {
-    console.error('Get student list error:', error);
+    console.error('Get fellow students error:', error);
     res.status(500).json({
       success: false,
       message: 'Internal server error'

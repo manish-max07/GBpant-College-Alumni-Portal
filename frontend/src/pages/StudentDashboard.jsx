@@ -297,6 +297,13 @@ export default function StudentDashboard() {
               
               <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
                 <button
+                  onClick={() => navigate('/fellow-students')}
+                  className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-white text-blue-700 rounded-2xl hover:bg-blue-50 transition-all duration-200 font-semibold text-sm sm:text-base shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+                >
+                  <FaUserGraduate className="w-4 h-4" />
+                  <span>Fellow Students</span>
+                </button>
+                <button
                   onClick={handleEdit}
                   className="flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-white/15 backdrop-blur-sm border border-white/30 text-white rounded-2xl hover:bg-white/25 transition-all duration-200 font-semibold text-sm sm:text-base shadow-lg hover:shadow-xl"
                 >

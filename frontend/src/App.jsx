@@ -19,6 +19,7 @@ import AlumniDashboard from './pages/AlumniDashboard';
 import StudentDashboard from './pages/StudentDashboard';
 import AlumniList from './pages/AlumniList';
 import StudentList from './pages/StudentList';
+import FellowStudents from './pages/FellowStudents';
 import Settings from './pages/Settings';
 import CaptchaTest from './pages/CaptchaTest';
 import DebugCaptcha from './pages/DebugCaptcha';
@@ -93,6 +94,11 @@ function App() {
         <Route path="/student-list" element={
           <ProtectedRoute>
             <StudentList />
+          </ProtectedRoute>
+        } />
+        <Route path="/fellow-students" element={
+          <ProtectedRoute>
+            <FellowStudents />
           </ProtectedRoute>
         } />
         <Route path="/settings" element={
