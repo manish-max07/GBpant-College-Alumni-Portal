@@ -64,7 +64,8 @@ api.interceptors.response.use(
       // Don't redirect here - let the useAuth hook and ProtectedRoute handle it
       // This prevents conflicts with React Router
     } else if (error.response?.status === 403) {
-      toast.error('Access denied - insufficient permissions');
+      const msg = error.response?.data?.message || 'Access denied - insufficient permissions';
+      toast.error(msg);
     } else if (error.response?.status >= 500) {
       toast.error('Server error. Please try again later.');
     } else if (error.code === 'ECONNABORTED') {

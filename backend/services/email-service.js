@@ -323,6 +323,74 @@ const sendApprovalEmail = async (email, fullName) => {
 };
 
 
+/**
+ * Send profile submission confirmation email (under review)
+ */
+const sendSubmissionEmail = async (email, fullName) => {
+  if (!email) {
+    console.error('❌ Missing email for submission notification');
+    return false;
+  }
+
+  const transporter = createSMTPTransporter();
+  if (!transporter) {
+    console.error('❌ SMTP transporter not available for submission email');
+    return false;
+  }
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+      <div style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 28px;">🎓 GB Pant College</h1>
+        <p style="color: #fef3c7; margin: 10px 0 0 0; font-size: 16px;">Alumni Portal</p>
+      </div>
+      <div style="background-color: white; padding: 40px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h2 style="color: #d97706; margin: 0 0 20px 0;">📝 Profile Submitted for Review</h2>
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Dear <strong>${fullName || 'User'}</strong>,
+        </p>
+        <p style="color: #4b5563; font-size: 16px; line-height: 1.6;">
+          Thank you for completing your profile on the GB Pant College Alumni Portal! Your profile details have been submitted and are currently <strong>under review</strong> by our administration team.
+        </p>
+        <div style="background: #fffbeb; border: 1px solid #fde68a; padding: 20px; border-radius: 8px; margin: 25px 0;">
+          <p style="color: #92400e; font-size: 14px; line-height: 1.6; margin: 0;">
+            ⏳ <strong>Next Steps:</strong> Once our admin verifies your details, you will receive an approval email. You will then be officially onboarded and gain full access to all features, including the Alumni & Student directories.
+          </p>
+        </div>
+        <div style="background: #fef2f2; border: 1px solid #fecaca; padding: 15px; border-radius: 8px; margin-bottom: 25px;">
+          <p style="color: #991b1b; font-size: 13px; line-height: 1.5; margin: 0;">
+            ⚠️ <strong>Important Notice:</strong> Please ensure all submitted academic and personal information is accurate. If details cannot be verified, the account will be deleted.
+          </p>
+        </div>
+        <p style="color: #6b7280; font-size: 13px; margin-top: 30px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
+          If you have any questions, feel free to reach out to the administration team.
+        </p>
+      </div>
+      <div style="text-align: center; margin-top: 20px; color: #9ca3af; font-size: 12px;">
+        <p>© ${new Date().getFullYear()} GB Pant College Alumni Portal. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    await transporter.verify();
+    const info = await transporter.sendMail({
+      from: `"GBPANT Alumni Portal" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: '📝 Profile Submitted for Verification - GBPANT Alumni Portal',
+      html,
+      text: `Dear ${fullName || 'User'},\n\nYour profile details for GB Pant College Alumni Portal have been submitted for administrator review.\n\nYou will receive an approval email once your profile is verified. In case details are unverified, the account will be deleted.\n\nThank you for your patience!`
+    });
+
+    console.log('✅ Submission confirmation email sent to:', email.replace(/(.{2}).*@/, '$1***@'));
+    console.log('   Message ID:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to send submission email:', error.message);
+    return false;
+  }
+};
+
 const isValidEmail = (email) => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
@@ -332,7 +400,9 @@ module.exports = {
   sendOTPEmail,
   isValidEmail,
   sendApprovalEmail,
+  sendSubmissionEmail,
   // Export individual methods for testing
   sendViaSMTP,
   createSMTPTransporter
 };
+

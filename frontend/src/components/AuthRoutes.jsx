@@ -49,7 +49,7 @@ export const ProtectedRoute = ({ children }) => {
     user?.isAdmin ||
     (user?.email && ADMIN_EMAIL && user.email.toLowerCase().trim() === ADMIN_EMAIL.toLowerCase().trim())
   );
-  const isApproved = user?.is_approved !== false; // undefined → treat as approved
+  const isApproved = user?.is_approved === true;
   if (user && user.profile_complete && !isApproved && !isAdmin) {
     console.log('⏳ ProtectedRoute: Profile complete but account pending approval');
     return <PendingApproval />;

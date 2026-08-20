@@ -39,48 +39,49 @@ const PendingApproval = () => {
             <div className="flex items-center justify-center mb-6">
               <span className="inline-flex items-center gap-2 bg-amber-50 text-amber-700 border border-amber-200 rounded-full px-4 py-2 text-sm font-semibold">
                 <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
-                Pending Admin Approval
+                Profile Submitted & Under Verification
               </span>
             </div>
 
             <div className="text-center mb-6">
-              <p className="text-gray-700 text-base leading-relaxed mb-3">
-                Thank you for completing your profile! Your account is currently
-                being reviewed by our admin team.
+              <h3 className="text-lg font-bold text-gray-800 mb-2">
+                Registration Complete — Awaiting Admin Approval
+              </h3>
+              <p className="text-gray-700 text-sm leading-relaxed mb-3">
+                You have successfully registered and submitted your profile details. Your profile will now be reviewed and verified by the administration.
               </p>
               <p className="text-gray-600 text-sm leading-relaxed">
-                You will receive an <strong>email notification</strong> at your registered
-                email address once your account has been approved. This usually takes
-                less than 24 hours.
+                You will receive an <strong>email notification</strong> once approved, after which you will be <strong>officially onboarded</strong> and can access all portal features (including Alumni & Student directories).
               </p>
+            </div>
+
+            {/* Warning banner */}
+            <div className="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
+              <div className="flex items-start gap-3">
+                <span className="text-red-500 text-xl flex-shrink-0">⚠️</span>
+                <p className="text-red-800 text-xs leading-relaxed font-medium">
+                  <strong>Notice:</strong> Please ensure all submitted academic and personal information is accurate. In case any provided details are incorrect or unverified, your account will be deleted.
+                </p>
+              </div>
             </div>
 
             {/* Info cards */}
             <div className="grid grid-cols-1 gap-3 mb-8">
-              <div className="flex items-start gap-3 p-4 bg-blue-50 rounded-xl border border-blue-100">
-                <span className="text-blue-500 text-xl flex-shrink-0">📧</span>
+              <div className="flex items-start gap-3 p-3 bg-blue-50 rounded-xl border border-blue-100">
+                <span className="text-blue-500 text-lg flex-shrink-0">📧</span>
                 <div>
-                  <p className="text-blue-800 font-semibold text-sm">Email Notification</p>
+                  <p className="text-blue-800 font-semibold text-xs">Email Confirmation</p>
                   <p className="text-blue-600 text-xs mt-0.5">
-                    We'll send you an email as soon as your account is approved.
+                    An email will be sent to your registered address as soon as your account is approved.
                   </p>
                 </div>
               </div>
-              <div className="flex items-start gap-3 p-4 bg-green-50 rounded-xl border border-green-100">
-                <span className="text-green-500 text-xl flex-shrink-0">🛡️</span>
+              <div className="flex items-start gap-3 p-3 bg-green-50 rounded-xl border border-green-100">
+                <span className="text-green-500 text-lg flex-shrink-0">🎓</span>
                 <div>
-                  <p className="text-green-800 font-semibold text-sm">Secure Verification</p>
+                  <p className="text-green-800 font-semibold text-xs">Full Access Upon Approval</p>
                   <p className="text-green-600 text-xs mt-0.5">
-                    This process ensures all portal members are genuine GB Pant alumni or students.
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3 p-4 bg-purple-50 rounded-xl border border-purple-100">
-                <span className="text-purple-500 text-xl flex-shrink-0">⏱️</span>
-                <div>
-                  <p className="text-purple-800 font-semibold text-sm">Review Time</p>
-                  <p className="text-purple-600 text-xs mt-0.5">
-                    Accounts are typically approved within 24 hours on business days.
+                    Connect with alumni, view student profiles, and participate in portal networking.
                   </p>
                 </div>
               </div>
@@ -89,10 +90,10 @@ const PendingApproval = () => {
             {/* Logout button */}
             <button
               onClick={handleLogout}
-              className="w-full py-3 px-6 bg-gradient-to-r from-gray-100 to-gray-200 hover:from-gray-200 hover:to-gray-300 text-gray-700 font-semibold rounded-xl transition-all duration-200 border border-gray-200 hover:border-gray-300 hover:shadow-sm active:scale-[0.98] flex items-center justify-center gap-2"
+              className="w-full py-3.5 px-6 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg active:scale-[0.98] flex items-center justify-center gap-2 text-base"
             >
-              <span>🚪</span>
-              Sign Out
+              <span>✅</span>
+              OK — Sign Out
             </button>
 
             <p className="text-center text-gray-400 text-xs mt-4">
