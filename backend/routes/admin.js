@@ -251,15 +251,11 @@ router.delete('/users/:id', async (req, res) => {
 
 /**
  * POST /api/admin/promote-students
- * Promote all approved students by +1 semester.
- * Students who exceed their program's max semester are graduated → converted to alumni.
+ * Promote all approved students by +1 semester using bulk SQL.
+ * Optimised for Vercel serverless — uses only 5 DB queries total regardless of student count.
+ * Students at max semester are graduated and converted to alumni accounts.
  *
- * Program max semesters:
- *   B.Tech          → 8
- *   Diploma         → 6
- *   M.Tech          → 4
- *   UG Certificate  → 2
- *   (default/others → 8)
+ * Program max semesters: B.Tech=8, Diploma=6, M.Tech=4, UG Certificate=2
  */
 router.post('/promote-students', async (req, res) => {
   const MAX_SEMESTERS = {
@@ -273,114 +269,138 @@ router.post('/promote-students', async (req, res) => {
   try {
     await client.query('BEGIN');
 
-    // Fetch all approved students with their profile data
-    const studentsResult = await client.query(
+    // Query 1: fetch all approved students in one shot
+    const { rows: students } = await client.query(
       `SELECT u.id AS user_id, u.email, u.full_name,
-              sp.id AS profile_id, sp.semester, sp.current_year, sp.branch, sp.program,
-              sp.skills, sp.interests, sp.projects, sp.internships, sp.cgpa
+              sp.semester, sp.branch, sp.program, sp.skills
        FROM users u
        JOIN student_profiles sp ON sp.user_id = u.id
        WHERE u.user_type = 'student' AND u.is_approved = TRUE`
     );
 
-    const students = studentsResult.rows;
-    const promoted = [];
-    const graduated = [];
+    if (students.length === 0) {
+      await client.query('COMMIT');
+      return res.json({
+        success: true,
+        message: 'No approved students found to promote.',
+        promoted_count: 0,
+        graduated_count: 0,
+        promoted: [],
+        graduated: []
+      });
+    }
 
     const currentYear = new Date().getFullYear();
+    const toGraduate = [];
+    const toPromote  = [];
 
-    for (const student of students) {
-      const maxSem = MAX_SEMESTERS[student.program] || 8;
-      const currentSem = student.semester || 1;
-
-      if (currentSem >= maxSem) {
-        // Graduate this student → convert to alumni
-        const passingYear = currentYear;
-
-        // 1. Change user_type to 'alumni'
-        await client.query(
-          `UPDATE users SET user_type = 'alumni', updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
-          [student.user_id]
-        );
-
-        // 2. Create alumni_profiles row (copy basics from student profile)
-        //    Check if one already exists (edge case guard)
-        const existingAlumni = await client.query(
-          'SELECT id FROM alumni_profiles WHERE user_id = $1',
-          [student.user_id]
-        );
-
-        if (existingAlumni.rows.length === 0) {
-          await client.query(
-            `INSERT INTO alumni_profiles
-               (user_id, branch, program, passing_year, skills, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
-            [
-              student.user_id,
-              student.branch,
-              student.program,
-              passingYear,
-              student.skills || []
-            ]
-          );
-        }
-
-        // 3. Delete student_profiles row
-        await client.query(
-          'DELETE FROM student_profiles WHERE user_id = $1',
-          [student.user_id]
-        );
-
-        graduated.push({
-          user_id: student.user_id,
-          email: student.email,
-          full_name: student.full_name,
-          program: student.program,
-          branch: student.branch,
-          passing_year: passingYear
-        });
-
-        // Send graduation email (non-blocking, errors don't roll back)
-        sendGraduationEmail(student.email, student.full_name, student.program, passingYear)
-          .catch(err => console.error(`⚠️ Graduation email failed for ${student.email}:`, err.message));
-
-        console.log(`🎓 Graduated student → alumni: ${student.email} (${student.program}, sem ${currentSem}/${maxSem})`);
-
+    for (const s of students) {
+      const maxSem = MAX_SEMESTERS[s.program] || 8;
+      const curSem = s.semester || 1;
+      if (curSem >= maxSem) {
+        toGraduate.push({ ...s, passing_year: currentYear });
       } else {
-        // Promote: +1 semester, +1 current_year every 2 semesters (every even→odd transition)
-        const newSem = currentSem + 1;
-        // current_year increments when semester crosses odd boundary (1→2 means still year 1, 2→3 means year 2, etc.)
+        const newSem  = curSem + 1;
         const newYear = Math.ceil(newSem / 2);
-
-        await client.query(
-          `UPDATE student_profiles
-           SET semester = $1, current_year = $2, updated_at = CURRENT_TIMESTAMP
-           WHERE user_id = $3`,
-          [newSem, newYear, student.user_id]
-        );
-
-        promoted.push({
-          user_id: student.user_id,
-          email: student.email,
-          full_name: student.full_name,
-          program: student.program,
-          old_semester: currentSem,
-          new_semester: newSem
-        });
-
-        console.log(`📈 Promoted student: ${student.email} | sem ${currentSem} → ${newSem}`);
+        toPromote.push({ ...s, new_semester: newSem, new_year: newYear });
       }
+    }
+
+    // Query 2: bulk promote via UNNEST — single UPDATE for all promoting students
+    if (toPromote.length > 0) {
+      const userIds  = toPromote.map(s => s.user_id);
+      const newSems  = toPromote.map(s => s.new_semester);
+      const newYears = toPromote.map(s => s.new_year);
+
+      await client.query(
+        `UPDATE student_profiles sp
+         SET semester     = data.new_sem::integer,
+             current_year = data.new_year::integer,
+             updated_at   = CURRENT_TIMESTAMP
+         FROM (
+           SELECT UNNEST($1::int[]) AS uid,
+                  UNNEST($2::int[]) AS new_sem,
+                  UNNEST($3::int[]) AS new_year
+         ) AS data
+         WHERE sp.user_id = data.uid`,
+        [userIds, newSems, newYears]
+      );
+    }
+
+    // Queries 3-5: bulk graduate — 3 queries instead of 3 * N queries
+    let graduated = [];
+    if (toGraduate.length > 0) {
+      const gradIds      = toGraduate.map(s => s.user_id);
+      const branches     = toGraduate.map(s => s.branch);
+      const programs     = toGraduate.map(s => s.program);
+      const passingYears = toGraduate.map(() => currentYear);
+      const skillsArr    = toGraduate.map(s => s.skills || []);
+
+      // Query 3: flip user_type for all graduating students at once
+      await client.query(
+        `UPDATE users SET user_type = 'alumni', updated_at = CURRENT_TIMESTAMP
+         WHERE id = ANY($1::int[])`,
+        [gradIds]
+      );
+
+      // Query 4: bulk-insert alumni_profiles, skip any that already exist
+      await client.query(
+        `INSERT INTO alumni_profiles
+           (user_id, branch, program, passing_year, skills, created_at, updated_at)
+         SELECT data.uid, data.branch, data.program, data.py, data.skills,
+                CURRENT_TIMESTAMP, CURRENT_TIMESTAMP
+         FROM (
+           SELECT UNNEST($1::int[])    AS uid,
+                  UNNEST($2::text[])   AS branch,
+                  UNNEST($3::text[])   AS program,
+                  UNNEST($4::int[])    AS py,
+                  UNNEST($5::text[][]) AS skills
+         ) AS data
+         ON CONFLICT (user_id) DO NOTHING`,
+        [gradIds, branches, programs, passingYears, skillsArr]
+      );
+
+      // Query 5: delete all graduating student_profiles in one shot
+      await client.query(
+        `DELETE FROM student_profiles WHERE user_id = ANY($1::int[])`,
+        [gradIds]
+      );
+
+      graduated = toGraduate.map(s => ({
+        user_id:      s.user_id,
+        email:        s.email,
+        full_name:    s.full_name,
+        program:      s.program,
+        branch:       s.branch,
+        passing_year: currentYear
+      }));
     }
 
     await client.query('COMMIT');
 
+    // Respond immediately — well within Vercel's 10s timeout
     res.json({
       success: true,
-      message: `Promotion complete. ${promoted.length} student(s) promoted, ${graduated.length} student(s) graduated to alumni.`,
-      promoted_count: promoted.length,
+      message: `Promotion complete. ${toPromote.length} student(s) promoted, ${graduated.length} student(s) graduated to alumni.`,
+      promoted_count:  toPromote.length,
       graduated_count: graduated.length,
-      promoted,
+      promoted: toPromote.map(s => ({
+        user_id:      s.user_id,
+        email:        s.email,
+        full_name:    s.full_name,
+        program:      s.program,
+        old_semester: s.semester,
+        new_semester: s.new_semester
+      })),
       graduated
+    });
+
+    // Graduation emails sent AFTER the HTTP response — never blocks the reply
+    setImmediate(() => {
+      for (const g of graduated) {
+        sendGraduationEmail(g.email, g.full_name, g.program, g.passing_year)
+          .catch(err => console.error(`⚠️ Graduation email failed for ${g.email}:`, err.message));
+      }
     });
 
   } catch (error) {
