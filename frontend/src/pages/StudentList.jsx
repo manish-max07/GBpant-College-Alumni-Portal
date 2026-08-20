@@ -185,12 +185,6 @@ export default function StudentList() {
     'Civil Engineering'
   ];
 
-  const getBatchLabel = (year) => {
-    const currentYear = new Date().getFullYear();
-    const gradYear = currentYear + (4 - parseInt(year));
-    return `Batch of ${gradYear}`;
-  };
-
   return (
     <Layout showNav={true}>
       <div className="bg-gradient-to-br from-slate-50 to-blue-50 min-h-screen">
@@ -238,10 +232,10 @@ export default function StudentList() {
               <div>
                 <h2 className="text-xl sm:text-2xl font-bold text-slate-900 flex items-center gap-2">
                   <FaGraduationCap className="text-indigo-600" />
-                  Browse by Academic Year / Batch
+                  Browse by Academic Year
                 </h2>
                 <p className="text-slate-500 text-xs sm:text-sm mt-0.5">
-                  Filter students by study year and graduating class
+                  Filter students by their current year of study
                 </p>
               </div>
               {selectedYear !== 'all' && (
@@ -272,9 +266,6 @@ export default function StudentList() {
                   </span>
                 </div>
                 <div className="font-bold text-sm sm:text-base leading-snug">All Students</div>
-                <div className={`text-xs mt-0.5 ${selectedYear === 'all' ? 'text-indigo-100' : 'text-slate-400'}`}>
-                  Full Directory
-                </div>
               </button>
 
               {yearStats.map((y) => {
@@ -298,9 +289,6 @@ export default function StudentList() {
                       </span>
                     </div>
                     <div className="font-bold text-sm sm:text-base leading-snug">{getYearSuffix(y.year)} Year</div>
-                    <div className={`text-xs mt-0.5 ${isSelected ? 'text-blue-100' : 'text-slate-400'}`}>
-                      {getBatchLabel(y.year)}
-                    </div>
                   </button>
                 );
               })}
