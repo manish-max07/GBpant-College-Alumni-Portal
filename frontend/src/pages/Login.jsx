@@ -324,40 +324,55 @@ export default function Login() {
 
       {/* Login Notification Modal */}
       {showNotificationModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
-          <div className="bg-white p-8 rounded-xl shadow-2xl max-w-lg mx-4 border">
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 mx-auto mb-4 bg-green-100 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600 shadow-inner">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">
+              Password Set Successfully!
+            </h3>
+            
+            <p className="text-slate-500 text-sm mb-6">
+              Your account credentials have been created. There is <strong>1 final step</strong> to activate your account.
+            </p>
+            
+            {/* Step progress list */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mb-6 text-left space-y-2.5">
+              <div className="flex items-center gap-2.5 text-xs sm:text-sm text-emerald-700 font-medium">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 text-xs font-bold shrink-0">✓</span>
+                <span>Step 1: Account Created & Email Verified</span>
               </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-4">
-                Registration Completed Successfully!
-              </h3>
+              <div className="flex items-center gap-2.5 text-xs sm:text-sm text-emerald-700 font-medium">
+                <span className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-700 text-xs font-bold shrink-0">✓</span>
+                <span>Step 2: Secure Password Set</span>
+              </div>
+              <div className="flex items-center gap-2.5 text-xs sm:text-sm text-blue-700 font-bold bg-blue-50 border border-blue-200 p-2.5 rounded-lg">
+                <span className="w-5 h-5 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold shrink-0">3</span>
+                <span>Step 3: Complete Profile Details (Pending)</span>
+              </div>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6 text-left">
+              <p className="text-amber-900 font-semibold text-sm mb-1 flex items-center gap-1.5">
+                <span>📌 Action Required:</span>
+              </p>
+              <p className="text-amber-800 text-xs sm:text-sm leading-relaxed">
+                Please <strong>log in right now</strong> with your email and password to fill out your academic info & LinkedIn URL. Your full registration is pending until this step is submitted!
+              </p>
             </div>
             
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-              <p className="text-blue-800 font-semibold mb-3">
-                📧 Login with your email and recently created password to complete your profile
-              </p>
-              <p className="text-blue-700 text-sm">
-                This step is mandatory for first-time login to access all features of the alumni portal.
-              </p>
-            </div>
-            
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={() => setShowNotificationModal(false)}
-                className="flex items-center px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition-all duration-200 shadow-md"
-              >
-                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-                Close
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={() => setShowNotificationModal(false)}
+              className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all duration-200 shadow-md hover:shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            >
+              <span>Log In & Complete Profile Now</span>
+              <span>→</span>
+            </button>
           </div>
         </div>
       )}

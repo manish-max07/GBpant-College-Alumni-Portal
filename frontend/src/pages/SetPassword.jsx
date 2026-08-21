@@ -121,8 +121,10 @@ export default function SetPassword() {
       // Set flag to show notification modal on login page
       localStorage.setItem('show_login_notification', 'true');
       
-      // Show success message
-      toast.success(response.data.message);
+      // Show success message emphasizing profile setup
+      toast.success(response.data.message || 'Password set! Please log in now to complete your profile.', {
+        duration: 5000
+      });
       
       // Navigate to login page
       const redirectTo = response.data.redirectTo || '/login';

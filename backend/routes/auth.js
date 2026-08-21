@@ -340,7 +340,7 @@ router.post('/set-password', async (req, res) => {
 
     res.json({
       success: true,
-      message: `Password set successfully! Your ${session.user_type} registration is complete. You can now login.`,
+      message: `Password set successfully! Please log in now to complete your profile setup.`,
       userType: session.user_type,
       redirectTo: '/login'
     });
