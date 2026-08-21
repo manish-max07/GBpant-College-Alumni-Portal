@@ -157,6 +157,10 @@ export default function Signup() {
             <p className="text-slate-600">
               Connect with fellow GBPANT alumni and current students worldwide
             </p>
+            <div className="mt-3 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 border border-blue-200 text-blue-800 text-xs sm:text-sm font-medium shadow-sm">
+              <span>💻</span>
+              <span>Tip: Please preferably use a <strong>PC or Laptop</strong> for a seamless registration experience.</span>
+            </div>
           </div>
 
           {/* Signup Form */}

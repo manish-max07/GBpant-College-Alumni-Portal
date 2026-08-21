@@ -326,6 +326,9 @@ export default function ForgotPassword() {
             Hello {userName}! Please check your email for the verification code.
           </p>
         )}
+        <div className="mt-3 p-2.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-900 text-xs sm:text-sm text-center">
+          <span>📬 In case you do not see the OTP email, please <strong>check your Spam / Promotions section</strong>.</span>
+        </div>
       </div>
 
       <form onSubmit={handleOtpSubmit} className="space-y-6">
