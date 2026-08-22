@@ -536,6 +536,93 @@ const sendGraduationEmail = async (email, fullName, program, passingYear) => {
   }
 };
 
+/**
+ * Send notification email when an already registered user attempts to register again
+ */
+const sendAlreadyRegisteredEmail = async (email, fullName) => {
+  const transporter = createSMTPTransporter();
+  if (!transporter) {
+    console.error('❌ Cannot send already-registered email: SMTP transporter not available');
+    return false;
+  }
+
+  const portalUrl = process.env.FRONTEND_URL || 'https://gbpec-dseu-alumni-portal.onrender.com';
+  const loginUrl = `${portalUrl}/login`;
+  const forgotPasswordUrl = `${portalUrl}/forgot-password`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+      <div style="background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 26px;">🎓 GB Pant College</h1>
+        <p style="color: #e0e7ff; margin: 10px 0 0 0; font-size: 15px;">Alumni & Student Portal</p>
+      </div>
+      <div style="background-color: white; padding: 35px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.08);">
+        <h2 style="color: #1e3a8a; margin: 0 0 15px 0; font-size: 20px;">Account Already Registered</h2>
+        
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+          Hello ${fullName || 'there'},
+        </p>
+
+        <p style="color: #374151; font-size: 15px; line-height: 1.6;">
+          We noticed a recent attempt to register a new account on the <strong>GB Pant College Alumni Portal</strong> using this email address.
+        </p>
+
+        <div style="background-color: #eff6ff; border-left: 4px solid #3b82f6; padding: 15px; border-radius: 6px; margin: 20px 0;">
+          <p style="color: #1e40af; font-size: 14px; font-weight: bold; margin: 0 0 4px 0;">
+            ℹ️ You Already Have an Account!
+          </p>
+          <p style="color: #1e3a8a; font-size: 13px; margin: 0; line-height: 1.5;">
+            An account associated with this email address is already registered on our portal. You do not need to sign up again.
+          </p>
+        </div>
+
+        <p style="color: #374151; font-size: 14px; line-height: 1.6;">
+          <strong>What would you like to do next?</strong>
+        </p>
+
+        <div style="text-align: center; margin: 25px 0;">
+          <a href="${loginUrl}" style="background-color: #2563eb; color: #ffffff; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold; display: inline-block; margin: 6px; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);">
+            🚀 Log In to Your Account
+          </a>
+          <a href="${forgotPasswordUrl}" style="background-color: #f3f4f6; color: #374151; border: 1px solid #d1d5db; padding: 12px 28px; border-radius: 8px; text-decoration: none; font-size: 14px; font-weight: bold; display: inline-block; margin: 6px;">
+            🔑 Reset Forgotten Password
+          </a>
+        </div>
+
+        <div style="background-color: #fefce8; border-left: 4px solid #eab308; padding: 12px 15px; border-radius: 6px; margin: 20px 0;">
+          <p style="color: #854d0e; font-size: 12px; margin: 0; line-height: 1.5;">
+            📬 <strong>Tip:</strong> If you don't see OTP or reset emails in your Primary inbox, please check your <strong>Spam / Promotions</strong> folder.
+          </p>
+        </div>
+
+        <p style="color: #6b7280; font-size: 12px; line-height: 1.5; margin-top: 25px; border-top: 1px solid #e5e7eb; padding-top: 15px;">
+          If you did not initiate this registration attempt, you can safely ignore this email. Your existing account credentials remain completely secure.
+        </p>
+      </div>
+      <div style="text-align: center; margin-top: 20px; color: #9ca3af; font-size: 12px;">
+        <p>© ${new Date().getFullYear()} GB Pant College Alumni Portal. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"GB Pant Alumni Portal" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: 'Account Already Exists — GB Pant College Alumni Portal',
+      html,
+      text: `Hello ${fullName || 'there'},\n\nWe noticed an attempt to register on the GB Pant College Alumni Portal with this email address. You already have an active account!\n\n- Log In: ${loginUrl}\n- Reset Password: ${forgotPasswordUrl}\n\nIf you did not attempt this, please ignore this email.`
+    });
+
+    console.log('✅ Already-registered notice email sent to:', email.replace(/(.{2}).*@/, '$1***@'));
+    console.log('   Message ID:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to send already-registered notice email:', error.message);
+    return false;
+  }
+};
+
 module.exports = {
   sendOTPEmail,
   isValidEmail,
@@ -543,6 +630,7 @@ module.exports = {
   sendSubmissionEmail,
   sendRejectionEmail,
   sendGraduationEmail,
+  sendAlreadyRegisteredEmail,
   // Export individual methods for testing
   sendViaSMTP,
   createSMTPTransporter

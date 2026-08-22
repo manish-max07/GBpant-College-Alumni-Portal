@@ -11,6 +11,7 @@ const {
   isValidPassword,
   isValidMobile
 } = require('../utils/auth');
+const { sendAlreadyRegisteredEmail } = require('../services/email-service');
 const OTPSessionManager = require('../utils/otp-session-manager');
 const { 
   emailRateLimit, 
@@ -94,23 +95,27 @@ router.post('/signup',
       });
     }
 
-    // Check if user already exists - but don't reveal it to prevent enumeration
+    // Check if user already exists
     const existingUser = await pool.query(
-      'SELECT id, email, mobile FROM users WHERE email = $1 OR mobile = $2',
+      'SELECT id, email, full_name, mobile FROM users WHERE email = $1 OR mobile = $2',
       [email, mobile]
     );
 
     if (existingUser.rows.length > 0) {
-      // Don't reveal user exists - send same response as new user
-      // Just log it for admin monitoring
-      console.log(`🔍 Signup attempt for existing user: ${email.replace(/(.{2}).*@/, '$1***@')}`);
+      const user = existingUser.rows[0];
+      console.log(`🔍 Signup attempt for existing user: ${user.email.replace(/(.{2}).*@/, '$1***@')}`);
       
-      // Return success response (but don't actually create account or send OTP)
-      return res.json({
-        success: true,
-        message: `OTP sent to your email. You are registering as ${userType === 'student' ? 'a current student' : 'an alumni'}.`,
-        sessionId: 'dummy-session-' + Date.now(), // Fake session ID
-        userType
+      // Dispatch already-registered guidance email (awaited for Serverless reliability)
+      try {
+        await sendAlreadyRegisteredEmail(user.email, user.full_name);
+      } catch (err) {
+        console.error('⚠️ Failed to dispatch already-registered notice email:', err.message);
+      }
+
+      return res.status(200).json({
+        success: false,
+        alreadyRegistered: true,
+        message: 'An account with this email/mobile already exists. We have sent an email with login and password reset instructions. Please check your inbox and spam folder.'
       });
     }
 

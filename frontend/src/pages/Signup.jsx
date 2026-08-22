@@ -21,6 +21,7 @@ export default function Signup() {
   const [captchaVerified, setCaptchaVerified] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
+  const [showAlreadyRegisteredModal, setShowAlreadyRegisteredModal] = useState(false);
   const [showSuspiciousEmailModal, setShowSuspiciousEmailModal] = useState(false);
   const [showBlockedAccessModal, setShowBlockedAccessModal] = useState(false);
   const [blockingInfo, setBlockingInfo] = useState({});
@@ -88,6 +89,12 @@ export default function Signup() {
       };
 
       const response = await api.post('/api/auth/signup', submitData);
+
+      // Handle already registered user response
+      if (response.data.alreadyRegistered) {
+        setShowAlreadyRegisteredModal(true);
+        return;
+      }
       
       // Store session ID, email and user type for OTP verification
       localStorage.setItem('signup_sessionId', response.data.sessionId);
@@ -98,6 +105,10 @@ export default function Signup() {
       toast.success(response.data.message);
       navigate('/verify-otp');
     } catch (error) {
+      if (error.response?.data?.alreadyRegistered) {
+        setShowAlreadyRegisteredModal(true);
+        return;
+      }
       // Check for different types of blocking errors
       const errorType = error.response?.data?.errorType;
       const errorData = error.response?.data;
@@ -500,6 +511,67 @@ export default function Signup() {
         blockedValue={blockingInfo.blockedValue}
         contactInfo={blockingInfo.contactInfo}
       />
+
+      {/* Already Registered Modal */}
+      {showAlreadyRegisteredModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+          <div className="bg-white p-6 sm:p-8 rounded-2xl shadow-2xl max-w-lg w-full border border-slate-200 text-center">
+            <div className="w-16 h-16 mx-auto mb-4 bg-blue-100 rounded-2xl flex items-center justify-center text-blue-600 shadow-inner">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              </svg>
+            </div>
+
+            <h3 className="text-xl sm:text-2xl font-bold text-slate-900 mb-2">
+              Account Already Exists!
+            </h3>
+            
+            <p className="text-slate-600 text-sm mb-4">
+              An account with the email <strong>{formData.email}</strong> is already registered on the portal. You do not need to sign up again.
+            </p>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 text-left">
+              <p className="text-blue-900 font-semibold text-xs sm:text-sm mb-1 flex items-center gap-1.5">
+                <span>📧 Instructions Sent to Your Email:</span>
+              </p>
+              <p className="text-blue-800 text-xs sm:text-sm leading-relaxed">
+                We have just sent an email with login & password reset links. Please check your inbox and <strong>Spam / Promotions section</strong>.
+              </p>
+            </div>
+
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3.5 mb-6 text-left">
+              <p className="text-amber-900 text-xs sm:text-sm">
+                🔑 <strong>Forgot your password?</strong> You can reset it instantly by clicking below.
+              </p>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                type="button"
+                onClick={() => navigate('/login', { state: { email: formData.email } })}
+                className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-sm"
+              >
+                Log In Now
+              </button>
+              <button
+                type="button"
+                onClick={() => navigate('/forgot-password', { state: { email: formData.email } })}
+                className="w-full py-3 px-4 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl border border-slate-300 transition-colors"
+              >
+                Reset Password
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setShowAlreadyRegisteredModal(false)}
+              className="mt-4 text-xs text-slate-400 hover:text-slate-600 underline"
+            >
+              Dismiss
+            </button>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 }
