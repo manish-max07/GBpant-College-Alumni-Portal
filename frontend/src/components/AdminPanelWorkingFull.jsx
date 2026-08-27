@@ -75,6 +75,13 @@ const AdminPanelWorkingFull = () => {
   const [sendingAll, setSendingAll] = useState(false);
   const [sendAllResult, setSendAllResult] = useState(null);
 
+  // Incomplete profiles tab state
+  const [incompleteProfiles, setIncompleteProfiles] = useState([]);
+  const [incompleteProfilesLoading, setIncompleteProfilesLoading] = useState(false);
+  const [sendingProfileEmailId, setSendingProfileEmailId] = useState(null);
+  const [sendingAllProfiles, setSendingAllProfiles] = useState(false);
+  const [sendAllProfilesResult, setSendAllProfilesResult] = useState(null);
+
   const isAdmin = Boolean(
     user?.is_admin ||
     user?.isAdmin ||
@@ -99,6 +106,8 @@ const AdminPanelWorkingFull = () => {
         loadWarnedUsers();
       } else if (activeTab === 'incomplete') {
         loadIncompleteUsers();
+      } else if (activeTab === 'incomplete_profiles') {
+        loadIncompleteProfiles();
       }
     }
   }, [isAdmin, isVisible, activeTab]);
@@ -446,12 +455,64 @@ const AdminPanelWorkingFull = () => {
     }
   };
 
+  // ─── Incomplete Profiles Tab Functions ─────────────────────────────────────
+  const loadIncompleteProfiles = async () => {
+    setIncompleteProfilesLoading(true);
+    try {
+      const response = await api.get('/api/admin/incomplete-profiles');
+      if (response.data.success) {
+        setIncompleteProfiles(response.data.users || []);
+      }
+    } catch (error) {
+      console.error('❌ Failed to load incomplete profiles:', error);
+      toast.error('Failed to load incomplete profiles');
+    } finally {
+      setIncompleteProfilesLoading(false);
+    }
+  };
+
+  const handleSendProfileEmail = async (userId, userEmail) => {
+    setSendingProfileEmailId(userId);
+    try {
+      const response = await api.post(`/api/admin/incomplete-profiles/send-email/${userId}`);
+      if (response.data.success) {
+        toast.success(`✅ Profile reminder sent to ${userEmail}`);
+        await loadIncompleteProfiles();
+      } else {
+        toast.error('Failed to send email: ' + response.data.message);
+      }
+    } catch (error) {
+      toast.error('Failed to send email: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setSendingProfileEmailId(null);
+    }
+  };
+
+  const handleSendAllProfiles = async () => {
+    if (!window.confirm(`Send profile completion reminder emails to all ${incompleteProfiles.length} users with incomplete profiles?\n\nThis will send one email per person.`)) return;
+    setSendingAllProfiles(true);
+    setSendAllProfilesResult(null);
+    try {
+      const response = await api.post('/api/admin/incomplete-profiles/send-all');
+      if (response.data.success) {
+        setSendAllProfilesResult(response.data);
+        toast.success(`✅ Done! Sent: ${response.data.sent}, Failed: ${response.data.failed}`);
+        await loadIncompleteProfiles();
+      }
+    } catch (error) {
+      toast.error('Send all failed: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setSendingAllProfiles(false);
+    }
+  };
+
   // ─── Render guard ──────────────────────────────────────────────────────────
   if (!isAdmin) return null;
 
   // ─── Tab Navigation ────────────────────────────────────────────────────────
   const tabs = [
     { id: 'pending', label: '⏳ Pending Approvals', badge: pendingUsers.length || null },
+    { id: 'incomplete_profiles', label: '📝 Incomplete Profiles', badge: incompleteProfiles.length || null },
     { id: 'incomplete', label: '📋 Incomplete Signups', badge: incompleteUsers.length || null },
     { id: 'promotions', label: '🎓 Promotions', badge: null },
     { id: 'delete', label: '🔍 Delete Account', badge: null },
@@ -502,12 +563,12 @@ const AdminPanelWorkingFull = () => {
               </div>
 
               {/* Tab Navigation */}
-              <div className="flex border-b border-gray-200 flex-shrink-0 bg-white">
+              <div className="flex border-b border-gray-200 flex-shrink-0 bg-white overflow-x-auto">
                 {tabs.map((tab) => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex-1 py-3 px-4 text-sm font-medium transition-colors relative ${
+                    className={`flex-1 min-w-[150px] py-3 px-3 text-xs md:text-sm font-medium transition-colors relative whitespace-nowrap ${
                       activeTab === tab.id
                         ? 'text-red-600 border-b-2 border-red-600 bg-red-50'
                         : 'text-gray-600 hover:text-gray-800 hover:bg-gray-50'
@@ -515,7 +576,7 @@ const AdminPanelWorkingFull = () => {
                   >
                     {tab.label}
                     {tab.badge > 0 && (
-                      <span className="ml-2 inline-flex items-center justify-center w-5 h-5 bg-red-500 text-white text-xs rounded-full">
+                      <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 bg-red-500 text-white text-xs rounded-full">
                         {tab.badge}
                       </span>
                     )}
@@ -525,6 +586,117 @@ const AdminPanelWorkingFull = () => {
 
               {/* Scrollable Content */}
               <div className="flex-1 overflow-y-auto p-6">
+
+                {/* ═══ INCOMPLETE PROFILES TAB ═══════════════════════════════ */}
+                {activeTab === 'incomplete_profiles' && (
+                  <div className="space-y-4">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          Incomplete Profiles (Registered Users)
+                          <span className="ml-2 text-sm text-gray-500">({incompleteProfiles.length})</span>
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Users who created an account but haven't submitted their profile details (Step 2/2)
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={loadIncompleteProfiles}
+                          disabled={incompleteProfilesLoading}
+                          className="flex items-center gap-1.5 bg-purple-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-purple-700 disabled:opacity-50"
+                        >
+                          <FaSyncAlt className={incompleteProfilesLoading ? 'animate-spin' : ''} />
+                          Refresh
+                        </button>
+                        {incompleteProfiles.length > 0 && (
+                          <button
+                            onClick={handleSendAllProfiles}
+                            disabled={sendingAllProfiles || incompleteProfilesLoading}
+                            className="flex items-center gap-1.5 bg-purple-700 hover:bg-purple-800 text-white px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-50"
+                          >
+                            {sendingAllProfiles ? <FaSyncAlt className="animate-spin w-3 h-3" /> : <FaEnvelope className="w-3 h-3" />}
+                            {sendingAllProfiles ? 'Sending...' : `Send to All (${incompleteProfiles.length})`}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Send All Result */}
+                    {sendAllProfilesResult && (
+                      <div className="bg-purple-50 border border-purple-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                        <FaCheckCircle className="text-purple-600 w-4 h-4 flex-shrink-0" />
+                        <p className="text-sm text-purple-900">
+                          Batch result: <strong>{sendAllProfilesResult.sent}</strong> sent, <strong>{sendAllProfilesResult.failed}</strong> failed out of <strong>{sendAllProfilesResult.total}</strong>
+                        </p>
+                        <button onClick={() => setSendAllProfilesResult(null)} className="ml-auto text-purple-600 hover:text-purple-800">
+                          <FaTimes className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* List */}
+                    {incompleteProfilesLoading ? (
+                      <div className="flex items-center justify-center py-16">
+                        <FaSyncAlt className="animate-spin w-8 h-8 text-purple-500 mx-auto mb-3" />
+                      </div>
+                    ) : incompleteProfiles.length === 0 ? (
+                      <div className="py-16 text-center">
+                        <FaCheckCircle className="w-12 h-12 mx-auto mb-4 text-purple-400" />
+                        <p className="text-gray-600 font-medium">All registered users have completed their profiles!</p>
+                        <p className="text-gray-400 text-sm mt-1">No pending profile completions at this time.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {incompleteProfiles.map((u) => (
+                          <div key={u.id} className="border border-purple-100 rounded-xl p-4 bg-purple-50 hover:bg-purple-100 transition-colors">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <span className="font-semibold text-gray-900 text-sm">{u.full_name || '(No name)'}</span>
+                                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                    u.user_type === 'alumni' ? 'bg-purple-200 text-purple-800' : 'bg-blue-100 text-blue-700'
+                                  }`}>{u.user_type?.toUpperCase()}</span>
+                                  {u.roll_no && (
+                                    <span className="px-2 py-0.5 rounded-full text-xs bg-gray-100 text-gray-700 font-medium">
+                                      Roll: {u.roll_no}
+                                    </span>
+                                  )}
+                                  {u.profile_reminder_count > 0 && (
+                                    <span className="px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-800 font-medium">
+                                      {u.profile_reminder_count} reminder{u.profile_reminder_count !== 1 ? 's' : ''} sent
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-600">{u.email}</p>
+                                {u.mobile && <p className="text-xs text-gray-500">📱 {u.mobile}</p>}
+                                <div className="flex gap-3 mt-1 text-xs text-gray-400">
+                                  <span><FaClock className="inline mr-1" />Registered: {new Date(u.created_at).toLocaleDateString()}</span>
+                                  {u.profile_reminder_sent_at && (
+                                    <span>Last reminder: {new Date(u.profile_reminder_sent_at).toLocaleDateString()}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleSendProfileEmail(u.id, u.email)}
+                                disabled={sendingProfileEmailId === u.id || sendingAllProfiles}
+                                className="flex items-center gap-1.5 bg-purple-600 hover:bg-purple-700 text-white px-3 py-2 rounded-lg text-xs font-medium disabled:opacity-50 transition-colors flex-shrink-0"
+                              >
+                                {sendingProfileEmailId === u.id ? (
+                                  <FaSyncAlt className="animate-spin w-3 h-3" />
+                                ) : (
+                                  <FaEnvelope className="w-3 h-3" />
+                                )}
+                                Send Email
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* ═══ INCOMPLETE SIGNUPS TAB ════════════════════════════════ */}
                 {activeTab === 'incomplete' && (

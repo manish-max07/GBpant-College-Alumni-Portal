@@ -1,7 +1,7 @@
 const express = require('express');
 const { authenticateToken, adminOnly } = require('../middleware/auth');
 const { pool } = require('../config/database');
-const { sendApprovalEmail, sendApprovalWithWarningEmail, sendRejectionEmail, sendGraduationEmail, sendIncompleteRegistrationEmail } = require('../services/email-service');
+const { sendApprovalEmail, sendApprovalWithWarningEmail, sendRejectionEmail, sendGraduationEmail, sendIncompleteRegistrationEmail, sendProfileCompletionReminderEmail } = require('../services/email-service');
 
 const router = express.Router();
 
@@ -594,6 +594,152 @@ router.post('/incomplete-registrations/send-all', async (req, res) => {
     });
   } catch (error) {
     console.error('Send-all incomplete registrations error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/admin/incomplete-profiles
+ * List all registered users who have not completed their profile setup
+ */
+router.get('/incomplete-profiles', async (req, res) => {
+  try {
+    let result;
+    try {
+      result = await pool.query(
+        `SELECT id, full_name, email, mobile, roll_no, user_type, created_at,
+                profile_reminder_sent_at, profile_reminder_count
+         FROM users
+         WHERE (profile_complete IS NOT TRUE OR profile_complete = FALSE)
+           AND email != COALESCE($1, '')
+         ORDER BY created_at ASC`,
+        [process.env.ADMIN_EMAIL]
+      );
+    } catch (columnErr) {
+      // Fallback query in case tracking columns are not yet added in database
+      result = await pool.query(
+        `SELECT id, full_name, email, mobile, roll_no, user_type, created_at
+         FROM users
+         WHERE (profile_complete IS NOT TRUE OR profile_complete = FALSE)
+           AND email != COALESCE($1, '')
+         ORDER BY created_at ASC`,
+        [process.env.ADMIN_EMAIL]
+      );
+    }
+
+    res.json({ success: true, users: result.rows, total: result.rows.length });
+  } catch (error) {
+    console.error('Incomplete profiles list error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/admin/incomplete-profiles/send-email/:id
+ * Send a profile completion reminder to one user
+ */
+router.post('/incomplete-profiles/send-email/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      'SELECT id, full_name, email, user_type FROM users WHERE id = $1',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+
+    const user = result.rows[0];
+    const emailSent = await sendProfileCompletionReminderEmail(user.email, user.full_name, user.user_type);
+
+    if (emailSent) {
+      try {
+        await pool.query(
+          `UPDATE users
+           SET profile_reminder_sent_at = NOW(),
+               profile_reminder_count = COALESCE(profile_reminder_count, 0) + 1
+           WHERE id = $1`,
+          [id]
+        );
+      } catch (updateErr) {
+        // Silently continue if tracking columns do not exist yet
+      }
+    }
+
+    res.json({
+      success: emailSent,
+      message: emailSent ? `Profile completion reminder sent to ${user.email}` : 'Failed to send email'
+    });
+  } catch (error) {
+    console.error('Send incomplete profile email error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/admin/incomplete-profiles/send-all
+ * Send profile completion reminders to ALL users with incomplete profiles (rate-limited)
+ */
+router.post('/incomplete-profiles/send-all', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, full_name, email, user_type
+       FROM users
+       WHERE (profile_complete IS NOT TRUE OR profile_complete = FALSE)
+         AND email != COALESCE($1, '')
+       ORDER BY created_at ASC`,
+      [process.env.ADMIN_EMAIL]
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: true, sent: 0, failed: 0, message: 'No users with incomplete profiles found.' });
+    }
+
+    let sent = 0;
+    let failed = 0;
+    const sentIds = [];
+
+    for (const user of result.rows) {
+      try {
+        const ok = await sendProfileCompletionReminderEmail(user.email, user.full_name, user.user_type);
+        if (ok) {
+          sent++;
+          sentIds.push(user.id);
+        } else {
+          failed++;
+        }
+      } catch {
+        failed++;
+      }
+      // 600ms rate-limiting delay between emails to avoid SMTP limits
+      await new Promise(r => setTimeout(r, 600));
+    }
+
+    // Bulk update sent timestamps in one query if tracking columns exist
+    if (sentIds.length > 0) {
+      try {
+        await pool.query(
+          `UPDATE users
+           SET profile_reminder_sent_at = NOW(),
+               profile_reminder_count = COALESCE(profile_reminder_count, 0) + 1
+           WHERE id = ANY($1::int[])`,
+          [sentIds]
+        );
+      } catch (updateErr) {
+        // Silently continue if tracking columns do not exist yet
+      }
+    }
+
+    res.json({
+      success: true,
+      sent,
+      failed,
+      total: result.rows.length,
+      message: `Done. Sent: ${sent}, Failed: ${failed}`
+    });
+  } catch (error) {
+    console.error('Send-all incomplete profiles error:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
