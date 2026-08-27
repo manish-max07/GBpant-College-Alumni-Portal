@@ -1,7 +1,7 @@
 const express = require('express');
 const { authenticateToken, adminOnly } = require('../middleware/auth');
 const { pool } = require('../config/database');
-const { sendApprovalEmail, sendRejectionEmail, sendGraduationEmail } = require('../services/email-service');
+const { sendApprovalEmail, sendApprovalWithWarningEmail, sendRejectionEmail, sendGraduationEmail } = require('../services/email-service');
 
 const router = express.Router();
 
@@ -55,10 +55,14 @@ router.get('/pending-users', async (req, res) => {
 
 /**
  * PUT /api/admin/approve-user/:id
- * Approve a user account and send approval email
+ * Approve a user account and send approval email (with optional warnings).
+ * Body: { warnings?: string[] }  — if present, sends warning email instead of regular approval.
+ * Also stores warning notes on the user row (warning_notes column) for the warned-accounts list.
  */
 router.put('/approve-user/:id', async (req, res) => {
   const { id } = req.params;
+  const warnings = Array.isArray(req.body?.warnings) ? req.body.warnings.filter(Boolean) : [];
+  const hasWarnings = warnings.length > 0;
 
   try {
     // Get the user first so we can email them
@@ -77,18 +81,29 @@ router.put('/approve-user/:id', async (req, res) => {
       return res.status(400).json({ success: false, message: 'User is already approved' });
     }
 
-    // Set is_approved = TRUE
-    await pool.query(
-      'UPDATE users SET is_approved = TRUE WHERE id = $1',
-      [id]
-    );
+    // Set is_approved = TRUE and optionally store warning notes
+    if (hasWarnings) {
+      await pool.query(
+        `UPDATE users SET is_approved = TRUE, warning_notes = $2, warned_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = $1`,
+        [id, warnings.join(' | ')]
+      );
+    } else {
+      await pool.query(
+        'UPDATE users SET is_approved = TRUE, warning_notes = NULL, warned_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1',
+        [id]
+      );
+    }
 
-    console.log(`✅ Admin approved user: ${user.email}`);
+    console.log(`✅ Admin approved user: ${user.email}${hasWarnings ? ' (with warnings)' : ''}`);
 
-    // Send approval email - awaited for serverless environments (Vercel)
+    // Send appropriate approval email
     let emailSent = false;
     try {
-      emailSent = await sendApprovalEmail(user.email, user.full_name);
+      if (hasWarnings) {
+        emailSent = await sendApprovalWithWarningEmail(user.email, user.full_name, warnings);
+      } else {
+        emailSent = await sendApprovalEmail(user.email, user.full_name);
+      }
     } catch (err) {
       console.error('⚠️ Approval email send error:', err.message);
     }
@@ -96,10 +111,59 @@ router.put('/approve-user/:id', async (req, res) => {
     res.json({
       success: true,
       emailSent,
-      message: `User approved successfully.${emailSent ? ' Approval email sent.' : ''}`
+      hasWarnings,
+      message: `User approved successfully.${hasWarnings ? ' Warning email sent.' : (emailSent ? ' Approval email sent.' : '')}`
     });
   } catch (error) {
     console.error('Approve user error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+/**
+ * GET /api/admin/warned-accounts
+ * List all approved users who have unresolved warning notes
+ */
+router.get('/warned-accounts', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT
+         u.id, u.full_name, u.email, u.mobile, u.user_type,
+         u.warning_notes, u.warned_at, u.created_at,
+         COALESCE(ap.linkedin_profile, sp.linkedin_profile) AS linkedin_profile,
+         COALESCE(ap.branch, sp.branch)                     AS branch,
+         COALESCE(ap.program, sp.program)                   AS program
+       FROM users u
+       LEFT JOIN alumni_profiles  ap ON ap.user_id = u.id
+       LEFT JOIN student_profiles sp ON sp.user_id = u.id
+       WHERE u.is_approved = TRUE AND u.warning_notes IS NOT NULL AND u.warning_notes <> ''
+       ORDER BY u.warned_at ASC NULLS LAST`
+    );
+
+    res.json({ success: true, users: result.rows, total: result.rows.length });
+  } catch (error) {
+    console.error('Warned accounts list error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+/**
+ * PUT /api/admin/clear-warning/:id
+ * Clear warning notes for a user (they fixed the issue)
+ */
+router.put('/clear-warning/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      `UPDATE users SET warning_notes = NULL, warned_at = NULL, updated_at = CURRENT_TIMESTAMP WHERE id = $1 RETURNING email, full_name`,
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
+    res.json({ success: true, message: `Warning cleared for ${result.rows[0].email}` });
+  } catch (error) {
+    console.error('Clear warning error:', error);
     res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });

@@ -48,6 +48,10 @@ const AdminPanelWorkingFull = () => {
   const [pendingLoading, setPendingLoading] = useState(false);
   const [approvingId, setApprovingId] = useState(null);
   const [rejectingId, setRejectingId] = useState(null);
+  // Warning dropdown state: { [userId]: boolean } open/closed
+  const [warningOpen, setWarningOpen] = useState({});
+  // Selected warnings per user: { [userId]: Set<string> }
+  const [selectedWarnings, setSelectedWarnings] = useState({});
 
   // Delete account tab state
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,6 +59,9 @@ const AdminPanelWorkingFull = () => {
   const [searchLoading, setSearchLoading] = useState(false);
   const [deleteModal, setDeleteModal] = useState(null); // { id, full_name, email, user_type }
   const [isDeleting, setIsDeleting] = useState(false);
+  // Warned accounts
+  const [warnedUsers, setWarnedUsers] = useState([]);
+  const [warnedLoading, setWarnedLoading] = useState(false);
 
   // Promotions tab state
   const [isPromoting, setIsPromoting] = useState(false);
@@ -81,6 +88,8 @@ const AdminPanelWorkingFull = () => {
         loadBlockingStats();
       } else if (activeTab === 'pending') {
         loadPendingUsers();
+      } else if (activeTab === 'delete') {
+        loadWarnedUsers();
       }
     }
   }, [isAdmin, isVisible, activeTab]);
@@ -251,6 +260,75 @@ const AdminPanelWorkingFull = () => {
       toast.error('Failed to approve user: ' + (error.response?.data?.message || error.message));
     } finally {
       setApprovingId(null);
+    }
+  };
+
+  const WARNING_OPTIONS = [
+    'Wrong / Invalid LinkedIn profile link',
+    'LinkedIn profile link is missing',
+    'Profile photo appears inappropriate or missing',
+    'Branch or program details seem incorrect',
+    'Passing year appears incorrect',
+    'Name does not match expected format',
+    'Other — please check and update your profile',
+  ];
+
+  const toggleWarningOption = (userId, option) => {
+    setSelectedWarnings(prev => {
+      const current = new Set(prev[userId] || []);
+      if (current.has(option)) current.delete(option);
+      else current.add(option);
+      return { ...prev, [userId]: current };
+    });
+  };
+
+  const handleApproveWithWarning = async (userId, userEmail) => {
+    const warnings = Array.from(selectedWarnings[userId] || []);
+    if (warnings.length === 0) {
+      toast.error('Please select at least one warning before approving with warning.');
+      return;
+    }
+    setApprovingId(userId);
+    try {
+      const response = await api.put(`/api/admin/approve-user/${userId}`, { warnings });
+      if (response.data.success) {
+        toast.success(`⚠️ ${userEmail} approved with warning! Warning email sent.`);
+        setPendingUsers((prev) => prev.filter((u) => u.id !== userId));
+        setWarningOpen(prev => ({ ...prev, [userId]: false }));
+        setSelectedWarnings(prev => { const n = { ...prev }; delete n[userId]; return n; });
+        // Refresh warned accounts list if on delete tab
+        loadWarnedUsers();
+      }
+    } catch (error) {
+      toast.error('Failed to approve user: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setApprovingId(null);
+    }
+  };
+
+  const loadWarnedUsers = async () => {
+    setWarnedLoading(true);
+    try {
+      const response = await api.get('/api/admin/warned-accounts');
+      if (response.data.success) {
+        setWarnedUsers(response.data.users || []);
+      }
+    } catch (error) {
+      console.error('❌ Failed to load warned accounts:', error);
+    } finally {
+      setWarnedLoading(false);
+    }
+  };
+
+  const handleClearWarning = async (userId, userEmail) => {
+    try {
+      const response = await api.put(`/api/admin/clear-warning/${userId}`);
+      if (response.data.success) {
+        toast.success(`✅ Warning cleared for ${userEmail}`);
+        setWarnedUsers(prev => prev.filter(u => u.id !== userId));
+      }
+    } catch (error) {
+      toast.error('Failed to clear warning: ' + (error.response?.data?.message || error.message));
     }
   };
 
@@ -611,6 +689,7 @@ const AdminPanelWorkingFull = () => {
                                 </p>
                               </div>
                               <div className="flex flex-col gap-2 flex-shrink-0">
+                                {/* Normal Approve */}
                                 <button
                                   onClick={() => handleApproveUser(u.id, u.email)}
                                   disabled={approvingId === u.id || rejectingId === u.id}
@@ -623,6 +702,22 @@ const AdminPanelWorkingFull = () => {
                                   )}
                                   Approve
                                 </button>
+
+                                {/* Approve with Warning toggle */}
+                                <button
+                                  onClick={() => setWarningOpen(prev => ({ ...prev, [u.id]: !prev[u.id] }))}
+                                  disabled={approvingId === u.id || rejectingId === u.id}
+                                  className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium border transition-colors disabled:opacity-50 ${
+                                    warningOpen[u.id]
+                                      ? 'bg-amber-500 border-amber-500 text-white'
+                                      : 'bg-amber-50 border-amber-400 text-amber-700 hover:bg-amber-100'
+                                  }`}
+                                >
+                                  <FaExclamationTriangle className="w-3 h-3" />
+                                  Approve w/ Warning {warningOpen[u.id] ? '▲' : '▼'}
+                                </button>
+
+                                {/* Reject */}
                                 <button
                                   onClick={() => handleRejectUser(u.id, u.email)}
                                   disabled={approvingId === u.id || rejectingId === u.id}
@@ -637,6 +732,34 @@ const AdminPanelWorkingFull = () => {
                                 </button>
                               </div>
                             </div>
+
+                            {/* Warning Checklist Panel */}
+                            {warningOpen[u.id] && (
+                              <div className="mt-3 border-t border-amber-200 pt-3">
+                                <p className="text-xs font-semibold text-amber-800 mb-2">Select issue(s) to warn about:</p>
+                                <div className="space-y-1.5 mb-3">
+                                  {WARNING_OPTIONS.map(opt => (
+                                    <label key={opt} className="flex items-start gap-2 cursor-pointer group">
+                                      <input
+                                        type="checkbox"
+                                        checked={(selectedWarnings[u.id] || new Set()).has(opt)}
+                                        onChange={() => toggleWarningOption(u.id, opt)}
+                                        className="mt-0.5 accent-amber-500 w-4 h-4 flex-shrink-0"
+                                      />
+                                      <span className="text-xs text-gray-700 group-hover:text-amber-800 leading-relaxed">{opt}</span>
+                                    </label>
+                                  ))}
+                                </div>
+                                <button
+                                  onClick={() => handleApproveWithWarning(u.id, u.email)}
+                                  disabled={approvingId === u.id || (selectedWarnings[u.id]?.size ?? 0) === 0}
+                                  className="w-full flex items-center justify-center gap-2 bg-amber-500 hover:bg-amber-600 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-semibold transition-colors"
+                                >
+                                  {approvingId === u.id ? <FaSyncAlt className="animate-spin w-3 h-3" /> : <FaExclamationTriangle className="w-3 h-3" />}
+                                  Approve &amp; Send Warning Email
+                                </button>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -648,6 +771,93 @@ const AdminPanelWorkingFull = () => {
                 {activeTab === 'delete' && (
                   <div className="space-y-5">
                     <h3 className="text-lg font-semibold text-gray-800">Delete User Account</h3>
+
+                    {/* ─── Warned Accounts Section ─── */}
+                    <div className="border border-amber-300 rounded-xl overflow-hidden">
+                      <div className="flex items-center justify-between bg-amber-50 px-4 py-3 border-b border-amber-200">
+                        <div className="flex items-center gap-2">
+                          <FaExclamationTriangle className="text-amber-600 w-4 h-4" />
+                          <span className="font-semibold text-amber-800 text-sm">
+                            Warned Accounts
+                            {warnedUsers.length > 0 && (
+                              <span className="ml-2 bg-amber-500 text-white text-xs px-2 py-0.5 rounded-full">{warnedUsers.length}</span>
+                            )}
+                          </span>
+                          <span className="text-amber-600 text-xs">(approved but pending profile fix)</span>
+                        </div>
+                        <button
+                          onClick={loadWarnedUsers}
+                          disabled={warnedLoading}
+                          className="text-amber-700 hover:text-amber-900 text-xs flex items-center gap-1"
+                        >
+                          <FaSyncAlt className={warnedLoading ? 'animate-spin w-3 h-3' : 'w-3 h-3'} />
+                          Refresh
+                        </button>
+                      </div>
+
+                      <div className="p-4">
+                        {warnedLoading ? (
+                          <div className="flex items-center justify-center py-6">
+                            <FaSyncAlt className="animate-spin w-5 h-5 text-amber-500 mr-2" />
+                            <span className="text-sm text-gray-500">Loading warned accounts...</span>
+                          </div>
+                        ) : warnedUsers.length === 0 ? (
+                          <p className="text-center text-sm text-gray-400 py-4">No accounts with active warnings.</p>
+                        ) : (
+                          <div className="space-y-3">
+                            {warnedUsers.map((u) => (
+                              <div key={u.id} className="border border-amber-200 bg-amber-50 rounded-xl p-4">
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                      <h4 className="font-semibold text-gray-900 text-sm">{u.full_name || '(No name)'}</h4>
+                                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                        u.user_type === 'alumni' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                                      }`}>{u.user_type?.toUpperCase()}</span>
+                                    </div>
+                                    <p className="text-xs text-gray-600 mb-1">{u.email}</p>
+                                    {u.linkedin_profile && (
+                                      <a href={u.linkedin_profile} target="_blank" rel="noopener noreferrer"
+                                        className="text-xs text-blue-600 hover:underline flex items-center gap-1 mb-1">
+                                        <FaLinkedin className="w-3 h-3" /> LinkedIn Profile
+                                      </a>
+                                    )}
+                                    <div className="mt-2 bg-white border border-amber-300 rounded-lg px-3 py-2">
+                                      <p className="text-xs font-semibold text-amber-800 mb-1">Warning(s) issued:</p>
+                                      {u.warning_notes?.split(' | ').map((w, i) => (
+                                        <p key={i} className="text-xs text-amber-700">⚠️ {w}</p>
+                                      ))}
+                                      {u.warned_at && (
+                                        <p className="text-xs text-gray-400 mt-1">
+                                          <FaClock className="inline mr-1" />
+                                          Warned on: {new Date(u.warned_at).toLocaleString()}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col gap-2 flex-shrink-0">
+                                    <button
+                                      onClick={() => setDeleteModal({ id: u.id, full_name: u.full_name, email: u.email, user_type: u.user_type })}
+                                      className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+                                    >
+                                      <FaTrash className="w-3 h-3" />
+                                      Delete Account
+                                    </button>
+                                    <button
+                                      onClick={() => handleClearWarning(u.id, u.email)}
+                                      className="flex items-center gap-1.5 bg-green-50 hover:bg-green-100 border border-green-400 text-green-700 px-3 py-2 rounded-lg text-xs font-medium transition-colors"
+                                    >
+                                      <FaCheckCircle className="w-3 h-3" />
+                                      Mark Fixed
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
                     {/* Search bar */}
                     <div className="flex gap-2">

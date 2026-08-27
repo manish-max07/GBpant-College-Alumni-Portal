@@ -623,10 +623,100 @@ const sendAlreadyRegisteredEmail = async (email, fullName) => {
   }
 };
 
+/**
+ * Send approval-with-warning email
+ * Notifies the user they are approved but must fix specific issues within 48 hours
+ * or their account will be permanently deleted.
+ */
+const sendApprovalWithWarningEmail = async (email, fullName, warnings = []) => {
+  if (!email) {
+    console.error('❌ Missing email for approval-with-warning notification');
+    return false;
+  }
+
+  const transporter = createSMTPTransporter();
+  if (!transporter) {
+    console.error('❌ SMTP transporter not available for approval-with-warning email');
+    return false;
+  }
+
+  const portalUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+
+  const warningListHtml = warnings.map(w =>
+    `<li style="color: #92400e; font-size: 14px; line-height: 1.8; margin-bottom: 4px;">⚠️ ${w}</li>`
+  ).join('');
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+      <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 26px;">GB Pant College Alumni Portal</h1>
+        <p style="color: #d1fae5; margin: 8px 0 0 0; font-size: 15px;">Account Approved — Action Required</p>
+      </div>
+
+      <div style="background-color: white; padding: 36px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
+        <h2 style="color: #059669; margin: 0 0 12px 0;">✅ Your Account Has Been Approved!</h2>
+
+        <p style="color: #4b5563; font-size: 15px; line-height: 1.6;">
+          Dear <strong>${fullName || 'User'}</strong>,
+        </p>
+        <p style="color: #4b5563; font-size: 15px; line-height: 1.6;">
+          Your GB Pant College Alumni Portal account has been reviewed and <strong style="color: #059669;">approved</strong>. You can now log in and access the portal.
+        </p>
+
+        <!-- Warning Box -->
+        <div style="background: #fffbeb; border: 1.5px solid #f59e0b; border-left: 5px solid #d97706; padding: 20px; border-radius: 8px; margin: 24px 0;">
+          <p style="color: #92400e; font-size: 15px; font-weight: bold; margin: 0 0 10px 0;">
+            Important — Please Fix the Following Within 48 Hours:
+          </p>
+          <ul style="padding-left: 18px; margin: 0;">
+            ${warningListHtml}
+          </ul>
+          <p style="color: #b45309; font-size: 13px; margin: 12px 0 0 0; line-height: 1.6;">
+            Failure to correct the above issue(s) within <strong>48 hours</strong> may result in <strong>permanent deletion</strong> of your account. Please log in, go to your profile, and update the required information immediately.
+          </p>
+        </div>
+
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${portalUrl}/login"
+             style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; padding: 13px 30px; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold; display: inline-block;">
+            Log In &amp; Update Profile →
+          </a>
+        </div>
+
+        <p style="color: #6b7280; font-size: 13px; margin-top: 28px; padding-top: 18px; border-top: 1px solid #e5e7eb; line-height: 1.6;">
+          If you believe this is an error or need help, please contact the admin team by replying to this email.
+        </p>
+      </div>
+
+      <div style="text-align: center; margin-top: 16px; color: #9ca3af; font-size: 12px;">
+        <p>© ${new Date().getFullYear()} GB Pant College Alumni Portal. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"GB Pant Alumni Portal" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: 'Account Approved — Please Fix Profile Issues Within 48 Hours',
+      html,
+      text: `Dear ${fullName || 'User'},\n\nYour GB Pant Alumni Portal account has been approved!\n\nHowever, you must fix the following issue(s) within 48 hours or your account will be permanently deleted:\n\n${warnings.map(w => `- ${w}`).join('\n')}\n\nLog in and update your profile at: ${portalUrl}/login\n\nGB Pant Alumni Portal Team`
+    });
+
+    console.log('✅ Approval-with-warning email sent to:', email.replace(/(.{2}).*@/, '$1***@'));
+    console.log('   Message ID:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to send approval-with-warning email:', error.message);
+    return false;
+  }
+};
+
 module.exports = {
   sendOTPEmail,
   isValidEmail,
   sendApprovalEmail,
+  sendApprovalWithWarningEmail,
   sendSubmissionEmail,
   sendRejectionEmail,
   sendGraduationEmail,
