@@ -65,8 +65,15 @@ const AdminPanelWorkingFull = () => {
 
   // Promotions tab state
   const [isPromoting, setIsPromoting] = useState(false);
-  const [promotionResult, setPromotionResult] = useState(null); // { promoted_count, graduated_count, promoted, graduated }
+  const [promotionResult, setPromotionResult] = useState(null);
   const [showPromoteConfirm, setShowPromoteConfirm] = useState(false);
+
+  // Incomplete registrations tab state
+  const [incompleteUsers, setIncompleteUsers] = useState([]);
+  const [incompleteLoading, setIncompleteLoading] = useState(false);
+  const [sendingEmailId, setSendingEmailId] = useState(null); // userId being emailed
+  const [sendingAll, setSendingAll] = useState(false);
+  const [sendAllResult, setSendAllResult] = useState(null);
 
   const isAdmin = Boolean(
     user?.is_admin ||
@@ -90,6 +97,8 @@ const AdminPanelWorkingFull = () => {
         loadPendingUsers();
       } else if (activeTab === 'delete') {
         loadWarnedUsers();
+      } else if (activeTab === 'incomplete') {
+        loadIncompleteUsers();
       }
     }
   }, [isAdmin, isVisible, activeTab]);
@@ -385,12 +394,65 @@ const AdminPanelWorkingFull = () => {
     }
   };
 
+  // ─── Incomplete Registrations Tab Functions ────────────────────────────────
+  const loadIncompleteUsers = async () => {
+    setIncompleteLoading(true);
+    try {
+      const response = await api.get('/api/admin/incomplete-registrations');
+      if (response.data.success) {
+        setIncompleteUsers(response.data.users || []);
+      }
+    } catch (error) {
+      console.error('❌ Failed to load incomplete registrations:', error);
+      toast.error('Failed to load incomplete registrations');
+    } finally {
+      setIncompleteLoading(false);
+    }
+  };
+
+  const handleSendIncompleteEmail = async (userId, userEmail) => {
+    setSendingEmailId(userId);
+    try {
+      const response = await api.post(`/api/admin/incomplete-registrations/send-email/${userId}`);
+      if (response.data.success) {
+        toast.success(`✅ Reminder sent to ${userEmail}`);
+        // Refresh to show updated reminder count/timestamp
+        await loadIncompleteUsers();
+      } else {
+        toast.error('Failed to send email: ' + response.data.message);
+      }
+    } catch (error) {
+      toast.error('Failed to send email: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setSendingEmailId(null);
+    }
+  };
+
+  const handleSendAllIncomplete = async () => {
+    if (!window.confirm(`Send re-engagement emails to all ${incompleteUsers.length} incomplete registrations?\n\nThis will send one email per person.`)) return;
+    setSendingAll(true);
+    setSendAllResult(null);
+    try {
+      const response = await api.post('/api/admin/incomplete-registrations/send-all');
+      if (response.data.success) {
+        setSendAllResult(response.data);
+        toast.success(`✅ Done! Sent: ${response.data.sent}, Failed: ${response.data.failed}`);
+        await loadIncompleteUsers();
+      }
+    } catch (error) {
+      toast.error('Send all failed: ' + (error.response?.data?.message || error.message));
+    } finally {
+      setSendingAll(false);
+    }
+  };
+
   // ─── Render guard ──────────────────────────────────────────────────────────
   if (!isAdmin) return null;
 
   // ─── Tab Navigation ────────────────────────────────────────────────────────
   const tabs = [
     { id: 'pending', label: '⏳ Pending Approvals', badge: pendingUsers.length || null },
+    { id: 'incomplete', label: '📋 Incomplete Signups', badge: incompleteUsers.length || null },
     { id: 'promotions', label: '🎓 Promotions', badge: null },
     { id: 'delete', label: '🔍 Delete Account', badge: null },
     { id: 'security', label: '🛡️ Security & IP Blocking', badge: null }
@@ -463,6 +525,110 @@ const AdminPanelWorkingFull = () => {
 
               {/* Scrollable Content */}
               <div className="flex-1 overflow-y-auto p-6">
+
+                {/* ═══ INCOMPLETE SIGNUPS TAB ════════════════════════════════ */}
+                {activeTab === 'incomplete' && (
+                  <div className="space-y-4">
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-800">
+                          Incomplete Signups
+                          <span className="ml-2 text-sm text-gray-500">({incompleteUsers.length})</span>
+                        </h3>
+                        <p className="text-xs text-gray-500 mt-0.5">People who started registration but never completed it</p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={loadIncompleteUsers}
+                          disabled={incompleteLoading}
+                          className="flex items-center gap-1.5 bg-blue-600 text-white px-3 py-1.5 rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          <FaSyncAlt className={incompleteLoading ? 'animate-spin' : ''} />
+                          Refresh
+                        </button>
+                        {incompleteUsers.length > 0 && (
+                          <button
+                            onClick={handleSendAllIncomplete}
+                            disabled={sendingAll || incompleteLoading}
+                            className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium disabled:opacity-50"
+                          >
+                            {sendingAll ? <FaSyncAlt className="animate-spin w-3 h-3" /> : <FaEnvelope className="w-3 h-3" />}
+                            {sendingAll ? 'Sending...' : `Send to All (${incompleteUsers.length})`}
+                          </button>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Send All Result */}
+                    {sendAllResult && (
+                      <div className="bg-green-50 border border-green-200 rounded-xl px-4 py-3 flex items-center gap-3">
+                        <FaCheckCircle className="text-green-500 w-4 h-4 flex-shrink-0" />
+                        <p className="text-sm text-green-800">
+                          Last batch: <strong>{sendAllResult.sent}</strong> sent, <strong>{sendAllResult.failed}</strong> failed out of <strong>{sendAllResult.total}</strong>
+                        </p>
+                        <button onClick={() => setSendAllResult(null)} className="ml-auto text-green-600 hover:text-green-800">
+                          <FaTimes className="w-3 h-3" />
+                        </button>
+                      </div>
+                    )}
+
+                    {/* List */}
+                    {incompleteLoading ? (
+                      <div className="flex items-center justify-center py-16">
+                        <FaSyncAlt className="animate-spin w-8 h-8 text-indigo-500 mx-auto mb-3" />
+                      </div>
+                    ) : incompleteUsers.length === 0 ? (
+                      <div className="py-16 text-center">
+                        <FaCheckCircle className="w-12 h-12 mx-auto mb-4 text-green-400" />
+                        <p className="text-gray-600 font-medium">No incomplete registrations!</p>
+                        <p className="text-gray-400 text-sm mt-1">Everyone who started registration has completed it.</p>
+                      </div>
+                    ) : (
+                      <div className="space-y-2">
+                        {incompleteUsers.map((u) => (
+                          <div key={u.id} className="border border-indigo-100 rounded-xl p-4 bg-indigo-50 hover:bg-indigo-100 transition-colors">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-2 flex-wrap mb-1">
+                                  <span className="font-semibold text-gray-900 text-sm">{u.full_name || '(No name)'}</span>
+                                  <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                                    u.user_type === 'alumni' ? 'bg-purple-100 text-purple-700' : 'bg-blue-100 text-blue-700'
+                                  }`}>{u.user_type?.toUpperCase()}</span>
+                                  {u.reminder_count > 0 && (
+                                    <span className="px-2 py-0.5 rounded-full text-xs bg-amber-100 text-amber-700 font-medium">
+                                      {u.reminder_count} reminder{u.reminder_count !== 1 ? 's' : ''} sent
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="text-xs text-gray-600">{u.email}</p>
+                                {u.mobile && <p className="text-xs text-gray-500">📱 {u.mobile}</p>}
+                                <div className="flex gap-3 mt-1 text-xs text-gray-400">
+                                  <span><FaClock className="inline mr-1" />Attempted: {new Date(u.attempted_at).toLocaleDateString()}</span>
+                                  {u.last_reminder_sent_at && (
+                                    <span>Last email: {new Date(u.last_reminder_sent_at).toLocaleDateString()}</span>
+                                  )}
+                                </div>
+                              </div>
+                              <button
+                                onClick={() => handleSendIncompleteEmail(u.id, u.email)}
+                                disabled={sendingEmailId === u.id || sendingAll}
+                                className="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-2 rounded-lg text-xs font-medium disabled:opacity-50 transition-colors flex-shrink-0"
+                              >
+                                {sendingEmailId === u.id ? (
+                                  <FaSyncAlt className="animate-spin w-3 h-3" />
+                                ) : (
+                                  <FaEnvelope className="w-3 h-3" />
+                                )}
+                                Send Email
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* ═══ PROMOTIONS TAB ═══════════════════════════════════════ */}
                 {activeTab === 'promotions' && (

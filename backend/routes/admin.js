@@ -1,7 +1,7 @@
 const express = require('express');
 const { authenticateToken, adminOnly } = require('../middleware/auth');
 const { pool } = require('../config/database');
-const { sendApprovalEmail, sendApprovalWithWarningEmail, sendRejectionEmail, sendGraduationEmail } = require('../services/email-service');
+const { sendApprovalEmail, sendApprovalWithWarningEmail, sendRejectionEmail, sendGraduationEmail, sendIncompleteRegistrationEmail } = require('../services/email-service');
 
 const router = express.Router();
 
@@ -481,6 +481,120 @@ router.post('/promote-students', async (req, res) => {
     res.status(500).json({ success: false, message: 'Promotion failed: ' + error.message });
   } finally {
     client.release();
+  }
+});
+
+/**
+ * GET /api/admin/incomplete-registrations
+ * List all people who started signup but never completed it
+ */
+router.get('/incomplete-registrations', async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT id, full_name, email, mobile, user_type, attempted_at,
+              last_reminder_sent_at, reminder_count
+       FROM incomplete_registrations
+       ORDER BY attempted_at ASC`
+    );
+    res.json({ success: true, users: result.rows, total: result.rows.length });
+  } catch (error) {
+    console.error('Incomplete registrations list error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/admin/incomplete-registrations/send-email/:id
+ * Send a re-engagement email to one incomplete registration user
+ */
+router.post('/incomplete-registrations/send-email/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await pool.query(
+      'SELECT id, full_name, email FROM incomplete_registrations WHERE id = $1',
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Record not found' });
+    }
+    const user = result.rows[0];
+    const emailSent = await sendIncompleteRegistrationEmail(user.email, user.full_name);
+
+    if (emailSent) {
+      await pool.query(
+        `UPDATE incomplete_registrations
+         SET last_reminder_sent_at = NOW(),
+             reminder_count = COALESCE(reminder_count, 0) + 1
+         WHERE id = $1`,
+        [id]
+      );
+    }
+
+    res.json({
+      success: emailSent,
+      message: emailSent ? `Reminder email sent to ${user.email}` : 'Failed to send email'
+    });
+  } catch (error) {
+    console.error('Send incomplete registration email error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
+  }
+});
+
+/**
+ * POST /api/admin/incomplete-registrations/send-all
+ * Send re-engagement emails to ALL incomplete registration users (rate-limited)
+ */
+router.post('/incomplete-registrations/send-all', async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, full_name, email FROM incomplete_registrations ORDER BY attempted_at ASC'
+    );
+
+    if (result.rows.length === 0) {
+      return res.json({ success: true, sent: 0, failed: 0, message: 'No incomplete registrations found.' });
+    }
+
+    let sent = 0;
+    let failed = 0;
+    const sentIds = [];
+
+    for (const user of result.rows) {
+      try {
+        const ok = await sendIncompleteRegistrationEmail(user.email, user.full_name);
+        if (ok) {
+          sent++;
+          sentIds.push(user.id);
+        } else {
+          failed++;
+        }
+      } catch {
+        failed++;
+      }
+      // 600ms delay to avoid SMTP rate limits
+      await new Promise(r => setTimeout(r, 600));
+    }
+
+    // Bulk update sent timestamps in one query
+    if (sentIds.length > 0) {
+      await pool.query(
+        `UPDATE incomplete_registrations
+         SET last_reminder_sent_at = NOW(),
+             reminder_count = COALESCE(reminder_count, 0) + 1
+         WHERE id = ANY($1::int[])`,
+        [sentIds]
+      );
+    }
+
+    res.json({
+      success: true,
+      sent,
+      failed,
+      total: result.rows.length,
+      message: `Done. Sent: ${sent}, Failed: ${failed}`
+    });
+  } catch (error) {
+    console.error('Send-all incomplete registrations error:', error);
+    res.status(500).json({ success: false, message: 'Internal server error' });
   }
 });
 

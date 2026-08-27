@@ -157,6 +157,18 @@ router.post('/signup',
       userType
     });
 
+    // Track incomplete registration — fire-and-forget (don't block the response)
+    pool.query(
+      `INSERT INTO incomplete_registrations (full_name, email, mobile, user_type, attempted_at)
+       VALUES ($1, $2, $3, $4, NOW())
+       ON CONFLICT (email) DO UPDATE SET
+         full_name = EXCLUDED.full_name,
+         mobile = EXCLUDED.mobile,
+         user_type = EXCLUDED.user_type,
+         attempted_at = NOW()`,
+      [fullName, email, mobile, userType]
+    ).catch(err => console.error('⚠️ Failed to track incomplete registration:', err.message));
+
   } catch (error) {
     console.error('Signup error:', error);
     res.status(500).json({
@@ -340,8 +352,14 @@ router.post('/set-password', async (req, res) => {
     const userData = newUser.rows[0];
     console.log('Successfully created new user:', userData.email);
 
-    // Clean up session
+    // Clean up OTP session
     await otpManager.deleteSession(sessionId);
+
+    // Remove from incomplete_registrations now that signup is complete
+    pool.query(
+      'DELETE FROM incomplete_registrations WHERE email = $1',
+      [session.email]
+    ).catch(err => console.error('⚠️ Failed to clear incomplete registration:', err.message));
 
     res.json({
       success: true,

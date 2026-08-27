@@ -712,6 +712,107 @@ const sendApprovalWithWarningEmail = async (email, fullName, warnings = []) => {
   }
 };
 
+/**
+ * Send incomplete registration reminder email
+ * For people who submitted the signup form (got OTP) but never completed registration
+ */
+const sendIncompleteRegistrationEmail = async (email, fullName) => {
+  if (!email) {
+    console.error('❌ Missing email for incomplete registration reminder');
+    return false;
+  }
+
+  const transporter = createSMTPTransporter();
+  if (!transporter) {
+    console.error('❌ SMTP transporter not available for incomplete registration email');
+    return false;
+  }
+
+  const portalUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  const signupUrl = `${portalUrl}/signup`;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
+      <div style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); padding: 28px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 24px;">GB Pant College Alumni Portal</h1>
+        <p style="color: #c7d2fe; margin: 8px 0 0 0; font-size: 14px;">GBPIT (Est. 1961) | GBPEC (Est. 2007) | DSEU Okhla-1 Campus</p>
+      </div>
+
+      <div style="background-color: white; padding: 36px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.08);">
+        <h2 style="color: #4f46e5; margin: 0 0 12px 0; font-size: 20px;">You Left Before Finishing Your Registration!</h2>
+
+        <p style="color: #4b5563; font-size: 15px; line-height: 1.6;">
+          Hi <strong>${fullName || 'there'}</strong>,
+        </p>
+        <p style="color: #4b5563; font-size: 15px; line-height: 1.6;">
+          We noticed you started creating your account on the <strong>GB Pant Alumni Portal</strong> but didn't complete the process. Your spot is waiting — it only takes a couple of minutes to finish!
+        </p>
+
+        <!-- Milestone Banner -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 16px; border-radius: 8px; margin: 20px 0;">
+          <p style="color: #166534; font-size: 14px; font-weight: bold; margin: 0 0 4px 0;">🎉 1,000+ Alumni & Students Already Registered!</p>
+          <p style="color: #15803d; font-size: 13px; margin: 0; line-height: 1.5;">
+            From the <strong>Batch of 2007 to 2026</strong> — everyone is here, networking and connecting across companies worldwide. Don't miss out!
+          </p>
+        </div>
+
+        <!-- Steps -->
+        <p style="color: #374151; font-size: 14px; font-weight: bold; margin: 20px 0 10px 0;">To complete registration, just follow these steps:</p>
+        <ol style="color: #4b5563; font-size: 14px; line-height: 2; padding-left: 20px; margin: 0 0 20px 0;">
+          <li>Click the button below to go to the registration page</li>
+          <li>Fill in your details and verify your email via OTP</li>
+          <li>Set your password</li>
+          <li>Complete your profile (LinkedIn link required — copy it first!)</li>
+        </ol>
+
+        <!-- Tips Box -->
+        <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px 16px; border-radius: 6px; margin-bottom: 20px;">
+          <p style="color: #1e40af; font-size: 13px; font-weight: bold; margin: 0 0 6px 0;">📌 Quick Tips:</p>
+          <ul style="color: #1e3a8a; font-size: 13px; margin: 0; padding-left: 18px; line-height: 1.8;">
+            <li>Use a <strong>PC or laptop</strong> for the smoothest experience</li>
+            <li>Copy your <strong>LinkedIn profile URL</strong> before starting — it is required</li>
+            <li>If OTP email doesn't arrive, check <strong>Spam / Promotions</strong> folder</li>
+          </ul>
+        </div>
+
+        <!-- CTA Button -->
+        <div style="text-align: center; margin: 28px 0;">
+          <a href="${signupUrl}"
+             style="background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%); color: white; padding: 14px 34px; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold; display: inline-block; box-shadow: 0 4px 10px rgba(99, 102, 241, 0.35);">
+            Complete My Registration →
+          </a>
+        </div>
+
+        <p style="color: #6b7280; font-size: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; line-height: 1.6;">
+          If you did not attempt to register on this portal, you can safely ignore this email.
+        </p>
+      </div>
+
+      <div style="text-align: center; margin-top: 14px; color: #9ca3af; font-size: 12px;">
+        <p>© ${new Date().getFullYear()} GB Pant College Alumni Portal. All rights reserved.</p>
+      </div>
+    </div>
+  `;
+
+  try {
+    const info = await transporter.sendMail({
+      from: `"GB Pant Alumni Portal" <${process.env.SMTP_USER}>`,
+      to: email,
+      subject: 'Complete Your GB Pant Alumni Portal Registration',
+      html,
+      text: `Hi ${fullName || 'there'},\n\nYou started registration on the GB Pant Alumni Portal but didn't finish. Complete your account here: ${signupUrl}\n\nTips:\n- Use a PC/laptop for best experience\n- Copy your LinkedIn URL before starting (required)\n- Check Spam folder if OTP doesn't arrive\n\nGB Pant Alumni Portal Team`
+    });
+
+    console.log('✅ Incomplete registration reminder sent to:', email.replace(/(.{2}).*@/, '$1***@'));
+    console.log('   Message ID:', info.messageId);
+    return true;
+  } catch (error) {
+    console.error('❌ Failed to send incomplete registration reminder:', error.message);
+    return false;
+  }
+};
+
+
 module.exports = {
   sendOTPEmail,
   isValidEmail,
@@ -721,6 +822,7 @@ module.exports = {
   sendRejectionEmail,
   sendGraduationEmail,
   sendAlreadyRegisteredEmail,
+  sendIncompleteRegistrationEmail,
   // Export individual methods for testing
   sendViaSMTP,
   createSMTPTransporter
