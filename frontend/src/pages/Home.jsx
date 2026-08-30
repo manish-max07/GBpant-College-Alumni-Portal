@@ -98,7 +98,7 @@ export default function Home() {
         {/* Accent glow — very subtle, top-right */}
         <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-blue-600 opacity-[0.07] blur-[120px] pointer-events-none" />
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-28">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-28 text-center">
           {/* Institution badge */}
           <div className="mb-8">
             <span className="inline-block text-xs font-semibold tracking-widest uppercase text-blue-400 border border-blue-800 bg-blue-950/60 px-4 py-1.5 rounded-full">
@@ -106,13 +106,13 @@ export default function Home() {
             </span>
           </div>
 
-          <div className="max-w-3xl">
+          <div className="max-w-3xl mx-auto">
             <h1 className="text-4xl sm:text-5xl lg:text-[3.4rem] font-bold text-white leading-[1.15] tracking-tight mb-6">
               The Official Alumni Network of<br />
               <span className="text-blue-400">G.B. Pant Engineering College</span>
             </h1>
 
-            <p className="text-lg text-slate-400 leading-relaxed mb-10 max-w-2xl">
+            <p className="text-lg text-slate-400 leading-relaxed mb-10 max-w-2xl mx-auto">
               A professionally verified community for students and graduates of GB Pant
               Institute of Technology and GB Pant Engineering College. Reconnect, grow
               your career, and contribute to the legacy of one of Delhi's foremost
@@ -120,7 +120,7 @@ export default function Home() {
             </p>
 
             {isAuthenticated ? (
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-4 justify-center">
                 <Link
                   to={getDashboardPath()}
                   className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-colors duration-200"
@@ -139,7 +139,7 @@ export default function Home() {
                 </Link>
               </div>
             ) : (
-              <div className="flex flex-wrap gap-4">
+              <div className="flex flex-wrap gap-4 justify-center">
                 <Link
                   to="/signup"
                   className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-colors duration-200"
@@ -162,7 +162,7 @@ export default function Home() {
           </div>
 
           {/* Stats row */}
-          <div className="mt-20 pt-10 border-t border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-8">
+          <div className="mt-20 pt-10 border-t border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-8 text-center">
             {stats.map((s) => (
               <div key={s.label}>
                 <div className="text-2xl sm:text-3xl font-bold text-white mb-1">{s.value}</div>
