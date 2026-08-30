@@ -1,25 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  FaGlobe, 
-  FaBriefcase, 
-  FaBook, 
-  FaCalendarAlt, 
-  FaHandshake, 
-  FaLightbulb,
-  FaRocket,
-  FaUserGraduate,
-  FaUsers,
-  FaBookOpen,
-  FaArrowRight,
-  FaChartBar,
-  FaTachometerAlt,
-  FaTimes,
-  FaQuestionCircle,
-  FaExternalLinkAlt
-} from 'react-icons/fa';
-import { HiSparkles } from 'react-icons/hi';
-import { MdWavingHand } from 'react-icons/md';
 import Layout from '../components/Layout';
 import { useAuth } from '../hooks/useAuth';
 
@@ -27,7 +7,6 @@ export default function Home() {
   const { user, isAuthenticated, getDashboardPath } = useAuth();
   const [showUserGuideModal, setShowUserGuideModal] = useState(false);
 
-  // Show user guide modal on first visit
   useEffect(() => {
     const hasSeenGuide = localStorage.getItem('hasSeenUserGuide');
     if (!hasSeenGuide) {
@@ -40,358 +19,349 @@ export default function Home() {
     localStorage.setItem('hasSeenUserGuide', 'true');
   };
 
-  const features = [
+  const pillars = [
     {
-      icon: <FaGlobe className="text-white text-2xl" />,
-      title: 'Global Network',
-      description: 'Connect with alumni worldwide and expand your professional network across industries.'
+      label: 'Global Network',
+      description:
+        'Connect with verified alumni across India and abroad spanning over two decades of engineering graduates from GBPIT and GBPEC.'
     },
     {
-      icon: <FaBriefcase className="text-white text-2xl" />,
-      title: 'Career Services',
-      description: 'Access job opportunities, mentorship programs, and career development resources.'
+      label: 'Career Opportunities',
+      description:
+        'Discover job referrals, internship leads, and mentorship from senior alumni working across industries and geographies.'
     },
     {
-      icon: <FaBook className="text-white text-2xl" />,
-      title: 'Learning Hub',
-      description: 'Continuous learning opportunities, workshops, and knowledge sharing sessions.'
+      label: 'Mentorship Programme',
+      description:
+        'Offer guidance or find a mentor within the GB Pant community. Bridge the gap between student potential and professional success.'
     },
     {
-      icon: <FaCalendarAlt className="text-white text-2xl" />,
-      title: 'Events & Reunions',
-      description: 'Stay updated with alumni events, reunions, and networking gatherings.'
+      label: 'Professional Directory',
+      description:
+        'Browse a verified, searchable directory of alumni and current students filtered by batch, branch, company, and domain.'
     },
     {
-      icon: <FaHandshake className="text-white text-2xl" />,
-      title: 'Mentorship',
-      description: 'Find mentors or become one. Guide the next generation of GB Pant College graduates.'
+      label: 'Knowledge Exchange',
+      description:
+        'Share expertise, participate in technical discussions, and contribute to the collective intelligence of the community.'
     },
     {
-      icon: <FaLightbulb className="text-white text-2xl" />,
-      title: 'Innovation Hub',
-      description: 'Collaborate on projects, startups, and innovative ideas with fellow alumni.'
+      label: 'Community Events',
+      description:
+        'Stay informed about reunions, industry talks, campus visits, and collaborative initiatives organised by the alumni body.'
     }
   ];
 
   const stats = [
-    { number: '5000+', label: 'Alumni Members' },
-    { number: '50+', label: 'Countries' },
-    { number: '100+', label: 'Companies' },
-    { number: '20+', label: 'Years of Excellence' }
+    { value: '1,000+', label: 'Verified Members' },
+    { value: '2007–2026', label: 'Batches Represented' },
+    { value: '15+', label: 'Countries' },
+    { value: '100+', label: 'Companies' }
   ];
 
   const testimonials = [
     {
-      name: 'Dr. Santosh Kumari',
-      role: 'Manager, Tech Innovations',
-      year: 'Class of 2014',
-      content: 'The GB Pant College Alumni network opened doors I never knew existed. The connections and mentorship I received were invaluable.'
+      name: 'Santosh Kumari',
+      credential: 'B.Tech ECE, 2014  —  Manager, Tech Innovations',
+      quote:
+        'The alumni network provided access to opportunities I would never have found on my own. The mentorship from senior graduates was instrumental in shaping my career trajectory.'
     },
     {
       name: 'Raj Patel',
-      role: 'Senior Engineer, HCL',
-      year: 'Class of 2015',
-      content: 'Being part of this community helped me transition from student to professional seamlessly. The support is incredible.'
+      credential: 'B.Tech CSE, 2015  —  Senior Engineer, HCL Technologies',
+      quote:
+        'What sets this community apart is the willingness of alumni to give back. Within weeks of joining, I had three informational interviews lined up through the network.'
     },
     {
-      name: 'Dr. Priya Sharma',
-      role: 'Software Developer, PineGap',
-      year: 'Class of 2008',
-      content: 'The collaborative spirit of GB Pant College continues through this platform. It\'s amazing to see how we all support each other.'
+      name: 'Priya Sharma',
+      credential: 'B.Tech IT, 2008  —  Software Developer, PineGap',
+      quote:
+        'The collaborative spirit of GB Pant College lives on through this platform. It is genuinely gratifying to see how graduates support one another years after leaving campus.'
     }
   ];
 
   return (
     <Layout showNav={true}>
-      {/* Hero Section */}
-      <section className="relative bg-gradient-to-br from-indigo-900 via-indigo-800 to-purple-800 overflow-hidden">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
-          }} />
-        </div>
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 pb-32">
-          <div className="text-center">
-            {/* Main Hero Content */}
-            <div className="max-w-4xl mx-auto">
-              <div className="mb-8">
-                <div className="inline-flex items-center px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm text-white text-sm font-medium mb-8">
-                  <HiSparkles className="mr-2" /> Welcome to the GB Pant College Alumni Community
-                </div>
-                
-                <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6 leading-tight">
-                  Connect, Grow, and
-                  <span className="text-transparent bg-clip-text bg-gradient-to-r from-yellow-400 to-orange-400">
-                    {' '}Succeed Together
-                  </span>
-                </h1>
-                
-                <p className="text-xl text-indigo-100 mb-12 leading-relaxed max-w-3xl mx-auto">
-                  Join thousands of GB Pant College Alumni in a vibrant community 
-                  that fosters lifelong connections, career growth, and collaborative success.
-                </p>
-              </div>
+      {/* ─── HERO ─────────────────────────────────────────────────────────── */}
+      <section className="relative bg-[#0F172A] overflow-hidden">
 
-              {/* CTA Buttons */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
-                {isAuthenticated ? (
-                  <Link
-                    to={getDashboardPath()}
-                    className="group px-8 py-4 bg-white text-indigo-900 font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 flex items-center space-x-2"
-                    role="button"
-                    aria-label="Go back to your dashboard"
-                  >
-                    <FaTachometerAlt />
-                    <span>Back to Dashboard</span>
-                    <FaArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                  </Link>
-                ) : (
-                  <>
-                    <Link
-                      to="/signup"
-                      className="group px-8 py-4 bg-white text-indigo-900 font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 flex items-center space-x-2"
-                      role="button"
-                      aria-label="Join the GB Pant College Alumni community"
-                    >
-                      <FaRocket />
-                      <span>Join the Community</span>
-                      <FaArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </Link>
-                    
-                    <Link
-                      to="/login"
-                      className="px-8 py-4 bg-transparent border-2 border-white text-white font-semibold rounded-xl hover:bg-white hover:text-indigo-900 transition-all duration-200 flex items-center space-x-2"
-                      role="button"
-                      aria-label="Sign in to your account"
-                    >
-                      <MdWavingHand />
-                      <span>Sign In</span>
-                    </Link>
-                  </>
-                )}
-              </div>
+        {/* Subtle grid texture */}
+        <div
+          className="absolute inset-0 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect x='0' y='0' width='1' height='40' fill='%23ffffff'/%3E%3Crect x='0' y='0' width='40' height='1' fill='%23ffffff'/%3E%3C/svg%3E\")"
+          }}
+        />
 
-              {/* Stats */}
-              <div className="grid grid-cols-2 lg:grid-cols-4 gap-8">
-                {stats.map((stat, index) => (
-                  <div key={index} className="text-center">
-                    <div className="text-3xl lg:text-4xl font-bold text-white mb-2">{stat.number}</div>
-                    <div className="text-indigo-200 text-sm uppercase tracking-wide">{stat.label}</div>
-                  </div>
-                ))}
-              </div>
-            </div>
+        {/* Accent glow — very subtle, top-right */}
+        <div className="absolute top-0 right-0 w-[600px] h-[600px] rounded-full bg-blue-600 opacity-[0.07] blur-[120px] pointer-events-none" />
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-28">
+          {/* Institution badge */}
+          <div className="mb-8">
+            <span className="inline-block text-xs font-semibold tracking-widest uppercase text-blue-400 border border-blue-800 bg-blue-950/60 px-4 py-1.5 rounded-full">
+              GBPEC &amp; GBPIT — DSEU Okhla-1 Campus · Est. 1961
+            </span>
           </div>
-        </div>
 
-        {/* Wave separator */}
-        <div className="absolute bottom-0 left-0 right-0">
-          <svg className="w-full h-12" viewBox="0 0 1200 120" preserveAspectRatio="none">
-            <path d="M1200 120L0 16.48 0 0 1200 0 1200 120z" fill="#f8fafc"></path>
-          </svg>
-        </div>
-      </section>
+          <div className="max-w-3xl">
+            <h1 className="text-4xl sm:text-5xl lg:text-[3.4rem] font-bold text-white leading-[1.15] tracking-tight mb-6">
+              The Official Alumni Network of<br />
+              <span className="text-blue-400">G.B. Pant Engineering College</span>
+            </h1>
 
-      {/* Features Section */}
-      <section className="py-20 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
-              Why Join Our Alumni Network?
-            </h2>
-            <p className="text-xl text-slate-600 max-w-3xl mx-auto">
-              Discover the benefits of being part of the GB Pant College alumni community and 
-              unlock opportunities for personal and professional growth.
+            <p className="text-lg text-slate-400 leading-relaxed mb-10 max-w-2xl">
+              A professionally verified community for students and graduates of GB Pant
+              Institute of Technology and GB Pant Engineering College. Reconnect, grow
+              your career, and contribute to the legacy of one of Delhi's foremost
+              engineering institutions.
             </p>
-          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <div
-                key={index}
-                className="group bg-white p-8 rounded-2xl shadow-md hover:shadow-xl transform hover:-translate-y-2 transition-all duration-300 border border-slate-100"
-              >
-                <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center text-2xl mb-6 group-hover:scale-110 transition-transform duration-300">
-                  {feature.icon}
-                </div>
-                <h3 className="text-xl font-bold text-slate-900 mb-4">{feature.title}</h3>
-                <p className="text-slate-600 leading-relaxed">{feature.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl lg:text-4xl font-bold text-slate-900 mb-4">
-              What Our Alumni Say
-            </h2>
-            <p className="text-xl text-slate-600">
-              Hear from successful GB Pant College graduates about their experience with our community
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <div
-                key={index}
-                className="bg-slate-50 p-8 rounded-2xl relative"
-              >
-                <div className="text-4xl text-indigo-200 mb-4">"</div>
-                <p className="text-slate-700 mb-6 italic leading-relaxed">
-                  {testimonial.content}
-                </p>
-                <div className="flex items-center">
-                  <div className="w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold mr-4">
-                    {testimonial.name.split(' ').map(n => n[0]).join('')}
-                  </div>
-                  <div>
-                    <h4 className="font-semibold text-slate-900">{testimonial.name}</h4>
-                    <p className="text-sm text-slate-600">{testimonial.role}</p>
-                    <p className="text-xs text-indigo-600 font-medium">{testimonial.year}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-r from-indigo-600 to-purple-600">
-        <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          {isAuthenticated ? (
-            <>
-              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
-                Welcome back, {user?.full_name?.split(' ')[0] || 'User'}! 👋
-              </h2>
-              <p className="text-xl text-indigo-100 mb-12">
-                Continue exploring your alumni network and take advantage of all the features available to you.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            {isAuthenticated ? (
+              <div className="flex flex-wrap gap-4">
                 <Link
                   to={getDashboardPath()}
-                  className="px-8 py-4 bg-white text-indigo-600 font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 flex items-center justify-center space-x-2"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-colors duration-200"
+                  aria-label="Go to your dashboard"
                 >
-                  <FaChartBar />
-                  <span>Go to Dashboard</span>
+                  Go to Dashboard
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
                 </Link>
                 <Link
                   to={user?.user_type === 'student' ? '/alumni-list' : '/student-list'}
-                  className="px-8 py-4 bg-transparent border-2 border-white text-white font-semibold rounded-xl hover:bg-white hover:text-indigo-600 transition-all duration-200 flex items-center justify-center space-x-2"
+                  className="inline-flex items-center gap-2 px-6 py-3 border border-slate-600 text-slate-300 hover:border-slate-400 hover:text-white text-sm font-semibold rounded-lg transition-colors duration-200"
                 >
-                  <FaUsers />
-                  <span>{user?.user_type === 'student' ? 'Browse Alumni' : 'Browse Students'}</span>
+                  {user?.user_type === 'student' ? 'Browse Alumni' : 'Browse Students'}
                 </Link>
               </div>
-            </>
-          ) : (
-            <>
-              <h2 className="text-3xl lg:text-4xl font-bold text-white mb-6">
-                Ready to Join the GB Pant DSEU Alumni Family?
-              </h2>
-              <p className="text-xl text-indigo-100 mb-12">
-                Take the first step towards connecting with a global network of successful GB Pant college graduates.
-              </p>
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            ) : (
+              <div className="flex flex-wrap gap-4">
                 <Link
                   to="/signup"
-                  className="px-8 py-4 bg-white text-indigo-600 font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-1 transition-all duration-200 flex items-center justify-center space-x-2"
+                  className="inline-flex items-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-colors duration-200"
+                  aria-label="Create your alumni account"
                 >
-                  <FaUserGraduate />
-                  <span>Get Started Today</span>
+                  Create an Account
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+                  </svg>
                 </Link>
                 <Link
-                  to="/about"
-                  className="px-8 py-4 bg-transparent border-2 border-white text-white font-semibold rounded-xl hover:bg-white hover:text-indigo-600 transition-all duration-200 flex items-center justify-center space-x-2"
+                  to="/login"
+                  className="inline-flex items-center gap-2 px-6 py-3 border border-slate-600 text-slate-300 hover:border-slate-400 hover:text-white text-sm font-semibold rounded-lg transition-colors duration-200"
+                  aria-label="Sign in to your account"
                 >
-                  <FaBookOpen />
-                  <span>Learn More</span>
+                  Sign In
                 </Link>
               </div>
-            </>
-          )}
+            )}
+          </div>
+
+          {/* Stats row */}
+          <div className="mt-20 pt-10 border-t border-slate-800 grid grid-cols-2 sm:grid-cols-4 gap-8">
+            {stats.map((s) => (
+              <div key={s.label}>
+                <div className="text-2xl sm:text-3xl font-bold text-white mb-1">{s.value}</div>
+                <div className="text-xs text-slate-500 uppercase tracking-widest">{s.label}</div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* User Guide Modal */}
-      {showUserGuideModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full mx-4 shadow-2xl">
-            {/* Modal Header */}
-            <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <FaQuestionCircle className="w-5 h-5 text-blue-600" />
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900">User Guide</h3>
-              </div>
-              <button
-                onClick={handleCloseUserGuide}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-2"
-              >
-                <FaTimes className="w-5 h-5" />
-              </button>
-            </div>
+      {/* ─── DIVIDER ──────────────────────────────────────────────────────── */}
+      <div className="h-px bg-slate-200" />
 
-            {/* Modal Content */}
-            <div className="p-6">
-              <div className="mb-6">
-                <h4 className="text-xl font-bold text-gray-900 mb-3">
-                  Welcome to GB Pant Alumni Portal! 🎉
-                </h4>
-                <p className="text-gray-600 mb-4 leading-relaxed">
-                  New to the platform? Learn how to register and make the most of all the features available to connect with alumni and students.
+      {/* ─── WHAT WE OFFER ────────────────────────────────────────────────── */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-xl mb-16">
+            <p className="text-xs font-semibold tracking-widest text-blue-600 uppercase mb-3">Platform Features</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight mb-4">
+              Everything a professional alumni network should be
+            </h2>
+            <p className="text-slate-500 text-base leading-relaxed">
+              Built specifically for the GB Pant college community — not a generic social network, but a focused professional resource for verified graduates and students.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-px bg-slate-100 border border-slate-100 rounded-xl overflow-hidden">
+            {pillars.map((p, i) => (
+              <div
+                key={i}
+                className="bg-white px-8 py-8 hover:bg-slate-50 transition-colors duration-200 group"
+              >
+                {/* Accent line */}
+                <div className="w-8 h-0.5 bg-blue-600 mb-5 group-hover:w-12 transition-all duration-300" />
+                <h3 className="text-base font-semibold text-slate-900 mb-3">{p.label}</h3>
+                <p className="text-sm text-slate-500 leading-relaxed">{p.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ─── TESTIMONIALS ─────────────────────────────────────────────────── */}
+      <section className="py-24 bg-slate-50 border-t border-b border-slate-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="max-w-xl mb-16">
+            <p className="text-xs font-semibold tracking-widest text-blue-600 uppercase mb-3">Alumni Voices</p>
+            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900 leading-tight">
+              From the community
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {testimonials.map((t, i) => (
+              <div
+                key={i}
+                className="bg-white rounded-xl p-8 border border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-300"
+              >
+                {/* Large quote mark */}
+                <div className="text-5xl font-serif leading-none text-blue-100 select-none mb-4">&ldquo;</div>
+                <p className="text-slate-700 text-sm leading-[1.8] mb-8 italic">
+                  {t.quote}
                 </p>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-start space-x-3">
-                    <div className="flex-shrink-0 mt-0.5">
-                      <FaBookOpen className="w-5 h-5 text-blue-600" />
-                    </div>
-                    <div>
-                      <h5 className="font-medium text-blue-900 mb-1">Complete User Guide</h5>
-                      <p className="text-sm text-blue-700">
-                        Step-by-step instructions for registration, profile setup, and using all platform features.
-                      </p>
-                    </div>
+                <div className="border-t border-slate-100 pt-5 flex items-center gap-3">
+                  {/* Avatar initials */}
+                  <div className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
+                    {t.name.split(' ').map(n => n[0]).join('')}
+                  </div>
+                  <div>
+                    <div className="text-sm font-semibold text-slate-900">{t.name}</div>
+                    <div className="text-xs text-slate-400 mt-0.5">{t.credential}</div>
                   </div>
                 </div>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-              {/* Action Buttons */}
-              <div className="flex flex-col space-y-3">
+      {/* ─── CTA BANNER ───────────────────────────────────────────────────── */}
+      <section className="py-24 bg-[#0F172A]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-10">
+            <div className="max-w-2xl">
+              {isAuthenticated ? (
+                <>
+                  <p className="text-xs font-semibold tracking-widest text-blue-400 uppercase mb-3">Welcome back</p>
+                  <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight mb-4">
+                    Good to see you, {user?.full_name?.split(' ')[0] || 'there'}.
+                  </h2>
+                  <p className="text-slate-400 text-base leading-relaxed">
+                    Continue building your profile, exploring the alumni directory, and engaging with the GB Pant community.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <p className="text-xs font-semibold tracking-widest text-blue-400 uppercase mb-3">Get Started</p>
+                  <h2 className="text-3xl sm:text-4xl font-bold text-white leading-tight mb-4">
+                    Are you a GB Pant graduate or current student?
+                  </h2>
+                  <p className="text-slate-400 text-base leading-relaxed">
+                    Join a growing network of engineers and professionals who studied at GBPIT and GBPEC. Membership is free, verified, and exclusive to the college community.
+                  </p>
+                </>
+              )}
+            </div>
+
+            <div className="flex flex-col sm:flex-row lg:flex-col gap-3 lg:min-w-[200px]">
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    to={getDashboardPath()}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-colors duration-200"
+                  >
+                    Go to Dashboard
+                  </Link>
+                  <Link
+                    to={user?.user_type === 'student' ? '/alumni-list' : '/student-list'}
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-slate-600 text-slate-300 hover:border-slate-400 hover:text-white text-sm font-semibold rounded-lg transition-colors duration-200"
+                  >
+                    {user?.user_type === 'student' ? 'Browse Alumni' : 'Browse Students'}
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    to="/signup"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold rounded-lg transition-colors duration-200"
+                  >
+                    Register Now
+                  </Link>
+                  <Link
+                    to="/login"
+                    className="inline-flex items-center justify-center gap-2 px-6 py-3 border border-slate-600 text-slate-300 hover:border-slate-400 hover:text-white text-sm font-semibold rounded-lg transition-colors duration-200"
+                  >
+                    Sign In
+                  </Link>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── USER GUIDE MODAL ─────────────────────────────────────────────── */}
+      {showUserGuideModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full shadow-2xl overflow-hidden">
+            {/* Modal header */}
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-semibold text-slate-900">Welcome to GB Pant Alumni Portal</h3>
+                <p className="text-xs text-slate-500 mt-0.5">First time here? Here is how to get started.</p>
+              </div>
+              <button
+                onClick={handleCloseUserGuide}
+                className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-md"
+                aria-label="Close guide"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
+            {/* Modal body */}
+            <div className="px-6 py-6">
+              <p className="text-sm text-slate-600 leading-relaxed mb-6">
+                This portal is exclusively for students and alumni of GB Pant Institute of Technology and GB Pant Engineering College. Registration requires a valid institutional email or roll number for verification.
+              </p>
+
+              <div className="space-y-3">
                 <a
                   href="https://drive.google.com/file/d/1YoExfzLVojZdjnmRbgWSoYv96_6t_C1V/view?usp=sharing"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors flex items-center justify-center space-x-2"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
-                  <FaExternalLinkAlt className="w-4 h-4" />
-                  <span>Click here to know more</span>
+                  View User Guide
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                  </svg>
                 </a>
                 <button
                   onClick={handleCloseUserGuide}
-                  className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-3 px-4 rounded-lg transition-colors"
+                  className="w-full bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-medium py-3 px-4 rounded-lg transition-colors"
                 >
-                  I'll explore on my own
+                  I will explore on my own
                 </button>
               </div>
 
-              {/* Additional Tips */}
-              <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                <p className="text-xs text-gray-500 text-center">
-                  💡 Tip: You can access this guide anytime from the help section
-                </p>
-              </div>
+              <p className="mt-5 text-xs text-slate-400 text-center">
+                You can access this guide again from the Help section at any time.
+              </p>
             </div>
           </div>
         </div>
       )}
+
     </Layout>
   );
 }
