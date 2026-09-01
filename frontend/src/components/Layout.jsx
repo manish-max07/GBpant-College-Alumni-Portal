@@ -186,62 +186,25 @@ const Layout = ({ children, showNav = true, showFooter = true }) => {
                           </span>
                         </div>
 
-                        {/* Enhanced New User Attention Banner - conditional */}
-                        {showShakeAnimation && (
-                          <div className="mx-2 my-2 p-3 bg-gradient-to-r from-yellow-200 via-orange-200 to-yellow-200 border-2 border-orange-300 rounded-lg attention-pulse shadow-lg">
-                            <div className="flex items-center justify-center gap-2">
-                              <span className="text-lg animate-bounce">👆</span>
-                              <p className="text-xs text-orange-900 text-center font-bold">
-                                Explore all features below!
-                              </p>
-                              <span className="text-lg animate-bounce animation-delay-400">✨</span>
-                            </div>
-                            <div className="mt-1 h-1 bg-gradient-to-r from-red-400 to-orange-400 rounded-full animate-pulse"></div>
-                          </div>
-                        )}
-
                         {userNavigationLinks.map((item, index) => (
                           <Link
                             key={item.name}
                             to={item.href}
-                            className={`relative flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 hover:text-slate-900 transition-all duration-300 group rounded-lg mx-2 my-1 ${
-                              index < 2 && showShakeAnimation ? 'attention-pulse hover:attention-glow' : ''
-                            }`}
+                            className="relative flex items-center px-4 py-3 text-sm text-slate-700 hover:bg-slate-50 hover:text-slate-900 transition-colors rounded-lg mx-2 my-1"
                             onClick={() => setIsProfileMenuOpen(false)}
                           >
-                            {/* Permanent blinking indicator for main features */}
+                            {/* Static red dot for first two items */}
                             {index < 2 && (
-                              <>
-                                <div className="absolute left-1 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-red-500 rounded-full attention-bounce-dot opacity-80 shadow-lg"></div>
-                                <div className="absolute left-1 top-1/2 transform -translate-y-1/2 w-3 h-3 bg-red-400 rounded-full animate-ping opacity-60"></div>
-                              </>
+                              <div className="absolute left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-red-500 rounded-full" />
                             )}
-                            
-                            {/* Conditional gradient highlight for important items */}
-                            {index < 2 && showShakeAnimation && (
-                              <div className="absolute inset-0 bg-gradient-to-r from-blue-100 via-indigo-100 to-purple-100 opacity-30 rounded-lg group-hover:opacity-60 transition-all duration-300 attention-glow"></div>
-                            )}
-                            
-                            <span className={`mr-3 relative z-10 text-lg ${index < 2 && showShakeAnimation ? 'animate-bounce' : ''}`} style={{
-                              animationDelay: `${index * 0.3}s`,
-                              animationDuration: '2s'
-                            }}>
-                              {item.icon}
-                            </span>
-                            <span className="relative z-10 font-medium">{item.name}</span>
-                            
-                            {/* Changed back to "NEW" badge for first two items */}
+
+                            <span className="mr-3 text-lg">{item.icon}</span>
+                            <span className="font-medium">{item.name}</span>
+
                             {index < 2 && (
-                              <span className="ml-auto bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs px-2 py-1 rounded-full animate-pulse shadow-lg font-bold">
+                              <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full font-semibold">
                                 NEW
                               </span>
-                            )}
-                            
-                            {/* Conditional arrow indicator for main features */}
-                            {index < 2 && showShakeAnimation && (
-                              <div className="absolute right-1 top-1/2 transform -translate-y-1/2 text-red-500 animate-bounce animation-delay-600">
-                                →
-                              </div>
                             )}
                           </Link>
                         ))}
