@@ -108,7 +108,7 @@ export default function Home() {
 
           <div className="max-w-3xl mx-auto">
             <h1 className="text-4xl sm:text-5xl lg:text-[3.4rem] font-bold text-white leading-[1.15] tracking-tight mb-6">
-              The Official Alumni Network of<br />
+              The Only Alumni Network of<br />
               <span className="text-blue-400">G.B. Pant Engineering College</span>
             </h1>
 
