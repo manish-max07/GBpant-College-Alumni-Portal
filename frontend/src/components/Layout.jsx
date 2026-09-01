@@ -23,10 +23,15 @@ const Layout = ({ children, showNav = true, showFooter = true }) => {
   const { user, loading, isAuthenticated, logout } = useAuth();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [showShakeAnimation, setShowShakeAnimation] = useState(true);
   const menuRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Show card animation only for the first 2 visits
+  const [showShakeAnimation, setShowShakeAnimation] = useState(() => {
+    const visits = parseInt(localStorage.getItem('navAnimationVisits') || '0', 10);
+    return visits < 2;
+  });
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -35,18 +40,18 @@ const Layout = ({ children, showNav = true, showFooter = true }) => {
         setIsProfileMenuOpen(false);
       }
     };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Stop shake animation after 10 seconds
+  // Show animation for max 2 page visits, auto-hide after 8s each time
   useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowShakeAnimation(false);
-    }, 10000); // 10 seconds
-
-    return () => clearTimeout(timer);
+    if (showShakeAnimation) {
+      const visits = parseInt(localStorage.getItem('navAnimationVisits') || '0', 10);
+      localStorage.setItem('navAnimationVisits', String(visits + 1));
+      const timer = setTimeout(() => setShowShakeAnimation(false), 8000);
+      return () => clearTimeout(timer);
+    }
   }, []);
 
   const handleLogout = () => {
@@ -139,11 +144,12 @@ const Layout = ({ children, showNav = true, showFooter = true }) => {
                         </>
                       )}
                       
-                      {/* Permanent animated notification dots */}
-                      <div className="absolute -top-2 -right-2 w-5 h-5 z-20">
-                        <div className="w-full h-full bg-red-500 rounded-full attention-bounce-dot shadow-lg"></div>
-                        <div className="absolute inset-0 w-full h-full bg-red-400 rounded-full animate-ping opacity-75"></div>
-                        <div className="absolute inset-1 bg-red-600 rounded-full"></div>
+                      {/* Permanent notification dot — static after 2 visits */}
+                      <div className="absolute -top-2 -right-2 w-4 h-4 z-20">
+                        <div className="w-full h-full bg-red-500 rounded-full shadow-md" />
+                        {showShakeAnimation && (
+                          <div className="absolute inset-0 w-full h-full bg-red-400 rounded-full animate-ping opacity-75" />
+                        )}
                       </div>
                       
                       <button
