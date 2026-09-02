@@ -834,59 +834,69 @@ const sendProfileCompletionReminderEmail = async (email, fullName, userType = 'm
 
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9fafb;">
-      <div style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); padding: 28px; text-align: center; border-radius: 10px 10px 0 0;">
-        <h1 style="color: white; margin: 0; font-size: 24px;">🎓 GB Pant College Alumni Portal</h1>
-        <p style="color: #ede9fe; margin: 8px 0 0 0; font-size: 14px;">GBPIT (1961) | GBPEC (2007) | DSEU Okhla:1 Campus</p>
+      <div style="background: linear-gradient(135deg, #1e40af 0%, #1d4ed8 100%); padding: 28px; text-align: center; border-radius: 10px 10px 0 0;">
+        <h1 style="color: white; margin: 0; font-size: 22px; letter-spacing: 0.3px;">GB Pant College Alumni Portal</h1>
+        <p style="color: #bfdbfe; margin: 8px 0 0 0; font-size: 13px;">GBPIT (Est. 1961) | GBPEC (Est. 2007) | DSEU Okhla-1 Campus</p>
       </div>
 
       <div style="background-color: white; padding: 36px; border-radius: 0 0 10px 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.08);">
-        <h2 style="color: #6d28d9; margin: 0 0 12px 0; font-size: 20px;">Complete Your Profile Setup (Step 2 of 2)</h2>
 
-        <p style="color: #4b5563; font-size: 15px; line-height: 1.6;">
-          Hi <strong>${fullName || 'there'}</strong>,
-        </p>
-        <p style="color: #4b5563; font-size: 15px; line-height: 1.6;">
-          Your account is registered, but your <strong>Profile Setup is incomplete</strong>. Completing your profile is required so our admin team can verify and approve your account, granting you full access to the portal.
+        <h2 style="color: #1e40af; margin: 0 0 16px 0; font-size: 20px;">Congratulations on completing the first step!</h2>
+
+        <p style="color: #374151; font-size: 15px; line-height: 1.7;">
+          Dear <strong>${fullName || 'there'}</strong>,
         </p>
 
-        <!-- Milestone Highlight -->
-        <div style="background: #fdf4ff; border: 1px solid #f5d0fe; border-left: 5px solid #a855f7; padding: 16px; border-radius: 8px; margin: 20px 0;">
-          <p style="color: #7e22ce; font-size: 14px; font-weight: bold; margin: 0 0 4px 0;">🌟 1,000+ Alumni & Students Already Connected!</p>
-          <p style="color: #9333ea; font-size: 13px; margin: 0; line-height: 1.5;">
-            From the <strong>Batch of 2007 to 2026</strong> — your batchmates, seniors, and juniors are all here networking and sharing career opportunities. Don't miss out!
+        <p style="color: #374151; font-size: 15px; line-height: 1.7;">
+          You have successfully created your account on the <strong>GB Pant College Alumni Portal</strong> — great start!
+          However, your account is <strong>not yet active</strong> because the second step, filling in your basic profile details, has not been completed yet.
+        </p>
+
+        <p style="color: #374151; font-size: 15px; line-height: 1.7;">
+          Until your profile is submitted, our admin team cannot verify you, and you will not have access to the alumni and student directory.
+        </p>
+
+        <!-- Step Box -->
+        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-left: 5px solid #2563eb; padding: 18px; border-radius: 8px; margin: 22px 0;">
+          <p style="color: #1e3a8a; font-size: 14px; font-weight: bold; margin: 0 0 10px 0;">To activate your account, follow these steps:</p>
+          <ol style="color: #1e40af; font-size: 14px; line-height: 2.1; padding-left: 20px; margin: 0;">
+            <li>Click the button below to <strong>log in</strong> with your email and password</li>
+            <li>You will be taken directly to the <strong>Complete Profile</strong> page</li>
+            <li>Fill in your branch, program, year, and skills</li>
+            <li>Paste your <strong>LinkedIn Profile URL</strong> — this is mandatory, so please copy it before you begin</li>
+            <li>Click <strong>Submit for Approval</strong> and you are done</li>
+          </ol>
+        </div>
+
+        <!-- Community highlight -->
+        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-left: 5px solid #16a34a; padding: 14px 16px; border-radius: 8px; margin-bottom: 22px;">
+          <p style="color: #166534; font-size: 13px; font-weight: bold; margin: 0 0 4px 0;">1,000+ alumni and students are already on board</p>
+          <p style="color: #15803d; font-size: 13px; margin: 0; line-height: 1.6;">
+            From the Batch of 2007 to 2026, graduates across India, Germany, Canada, and more are already connected. Do not miss your place in the network.
           </p>
         </div>
 
-        <!-- Easy Steps -->
-        <p style="color: #374151; font-size: 14px; font-weight: bold; margin: 20px 0 10px 0;">How to finish profile setup in 2 minutes:</p>
-        <ol style="color: #4b5563; font-size: 14px; line-height: 2; padding-left: 20px; margin: 0 0 20px 0;">
-          <li>Click the button below and <strong>log in</strong> with your email & password</li>
-          <li>You will land directly on the <strong>Complete Profile</strong> page</li>
-          <li>Fill in your branch, program, and skills</li>
-          <li>Paste your <strong>LinkedIn Profile URL</strong> (mandatory — copy it first!)</li>
-          <li>Click <strong>Submit for Approval</strong></li>
-        </ol>
-
-        <!-- Quick Tips Box -->
-        <div style="background: #eff6ff; border-left: 4px solid #3b82f6; padding: 14px 16px; border-radius: 6px; margin-bottom: 24px;">
-          <p style="color: #1e40af; font-size: 13px; font-weight: bold; margin: 0 0 6px 0;">💡 Helpful Tips:</p>
-          <ul style="color: #1e3a8a; font-size: 13px; margin: 0; padding-left: 18px; line-height: 1.8;">
-            <li>Use a <strong>laptop or PC</strong> for the smoothest profile creation</li>
-            <li>Copy your <strong>LinkedIn profile link</strong> before starting</li>
-            <li>Forgot password? You can reset it on the login page anytime</li>
+        <!-- Tips Box -->
+        <div style="background: #fefce8; border-left: 4px solid #ca8a04; padding: 14px 16px; border-radius: 6px; margin-bottom: 24px;">
+          <p style="color: #854d0e; font-size: 13px; font-weight: bold; margin: 0 0 6px 0;">Quick Tips before you start:</p>
+          <ul style="color: #713f12; font-size: 13px; margin: 0; padding-left: 18px; line-height: 1.9;">
+            <li>Use a <strong>PC or laptop</strong> for the best experience</li>
+            <li>Open your <strong>LinkedIn profile</strong> and copy the URL before you begin — it is required during profile setup</li>
+            <li>If you forgot your password, use the <strong>Forgot Password</strong> option on the login page</li>
+            <li>If this email or any OTP landed in your <strong>Spam or Promotions</strong> folder, please mark it as Not Spam so you receive future updates in your inbox</li>
           </ul>
         </div>
 
         <!-- CTA Button -->
         <div style="text-align: center; margin: 28px 0;">
           <a href="${loginUrl}"
-             style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); color: white; padding: 14px 34px; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold; display: inline-block; box-shadow: 0 4px 12px rgba(109, 40, 217, 0.35);">
-            Log In & Complete Profile →
+             style="background-color: #1d4ed8; color: white; padding: 14px 36px; text-decoration: none; border-radius: 8px; font-size: 15px; font-weight: bold; display: inline-block; letter-spacing: 0.2px;">
+            Log In and Complete Profile
           </a>
         </div>
 
-        <p style="color: #6b7280; font-size: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; line-height: 1.6;">
-          If you have already completed your profile recently, please disregard this reminder.
+        <p style="color: #9ca3af; font-size: 12px; margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb; line-height: 1.6;">
+          If you have already completed your profile recently, you can ignore this message. If you did not register on this portal, you can safely disregard this email.
         </p>
       </div>
 
@@ -900,9 +910,9 @@ const sendProfileCompletionReminderEmail = async (email, fullName, userType = 'm
     const info = await transporter.sendMail({
       from: `"GB Pant Alumni Portal" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: 'Action Required: Complete Your Profile on GB Pant Alumni Portal',
+      subject: `Congratulations ${fullName ? fullName.split(' ')[0] : ''} — Complete your profile to activate your GB Pant Alumni account`,
       html,
-      text: `Hi ${fullName || 'there'},\n\nYour GB Pant Alumni Portal account is registered, but your profile setup (Step 2) is incomplete.\n\nPlease log in and complete your profile now:\n${loginUrl}\n\nTips:\n- Use a PC/laptop for the best experience\n- Copy your LinkedIn profile URL before starting (mandatory)\n\nGB Pant Alumni Portal Team`
+      text: `Dear ${fullName || 'there'},\n\nCongratulations on completing the first step of registration on the GB Pant College Alumni Portal!\n\nHowever, your account is not yet active. You need to log in and fill in your basic profile details to complete account creation.\n\nLog in here: ${loginUrl}\n\nSteps:\n1. Log in with your email and password\n2. Fill in your branch, program, year, and skills\n3. Paste your LinkedIn Profile URL (mandatory — copy it first)\n4. Submit for Approval\n\nQuick Tips:\n- Use a PC or laptop for the best experience\n- If you forgot your password, use the Forgot Password option on the login page\n- Check your Spam or Promotions folder if emails are not arriving in your Primary inbox — mark them as Not Spam\n\nGB Pant Alumni Portal Team`
     });
 
     console.log('✅ Profile completion reminder sent to:', email.replace(/(.{2}).*@/, '$1***@'));
