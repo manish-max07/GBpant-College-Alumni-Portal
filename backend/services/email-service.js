@@ -910,7 +910,7 @@ const sendProfileCompletionReminderEmail = async (email, fullName, userType = 'm
     const info = await transporter.sendMail({
       from: `"GB Pant Alumni Portal" <${process.env.SMTP_USER}>`,
       to: email,
-      subject: `Congratulations ${fullName ? fullName.split(' ')[0] : ''} — Complete your profile to activate your GB Pant Alumni account`,
+      subject: `Incomplete Notice: Your account isn't created yet — complete your profile to activate your GB Pant Alumni account`,
       html,
       text: `Dear ${fullName || 'there'},\n\nCongratulations on completing the first step of registration on the GB Pant College Alumni Portal!\n\nHowever, your account is not yet active. You need to log in and fill in your basic profile details to complete account creation.\n\nLog in here: ${loginUrl}\n\nSteps:\n1. Log in with your email and password\n2. Fill in your branch, program, year, and skills\n3. Paste your LinkedIn Profile URL (mandatory — copy it first)\n4. Submit for Approval\n\nQuick Tips:\n- Use a PC or laptop for the best experience\n- If you forgot your password, use the Forgot Password option on the login page\n- Check your Spam or Promotions folder if emails are not arriving in your Primary inbox — mark them as Not Spam\n\nGB Pant Alumni Portal Team`
     });
